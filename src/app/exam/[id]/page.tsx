@@ -58,16 +58,16 @@ export default function ExamSessionPage({ params }: { params: { id: string } }) 
   const fetchSession = async () => {
     try {
       const response = await fetch(`/api/exam?sessionId=${params.id}`);
-      
+
       if (response.ok) {
         const data = await response.json();
         setSession(data);
         // 初始化答案数组：单选题用-1，多选题用空数组
-        const initialAnswers = data.questions.map((q: Question) => 
+        const initialAnswers = data.questions.map((q: Question) =>
           q.type === 'multiple' ? [] : -1
         );
         setAnswers(initialAnswers);
-        
+
         // 如果有时间限制，设置倒计时
         if (data.timeLimit) {
           setTimeLeft(data.timeLimit * 60); // 转换为秒
@@ -93,7 +93,7 @@ export default function ExamSessionPage({ params }: { params: { id: string } }) 
   const handleMultipleAnswerChange = (questionIndex: number, answerIndex: number) => {
     const newAnswers = [...answers];
     const currentAnswers = newAnswers[questionIndex] as number[] || [];
-    
+
     if (currentAnswers.includes(answerIndex)) {
       // 如果已选中，则取消选择
       newAnswers[questionIndex] = currentAnswers.filter(a => a !== answerIndex);
@@ -106,7 +106,7 @@ export default function ExamSessionPage({ params }: { params: { id: string } }) 
 
   const handleSubmit = async () => {
     if (submitting) return;
-    
+
     setSubmitting(true);
     try {
       const response = await fetch('/api/exam/submit', {
@@ -143,7 +143,7 @@ export default function ExamSessionPage({ params }: { params: { id: string } }) 
 
   const getProgress = () => {
     if (!session) return 0;
-    
+
     const answered = answers.filter((answer, index) => {
       const question = session.questions[index];
       if (question.type === 'multiple') {
@@ -152,7 +152,7 @@ export default function ExamSessionPage({ params }: { params: { id: string } }) 
         return answer !== -1;
       }
     }).length;
-    
+
     return (answered / answers.length) * 100;
   };
 
@@ -232,7 +232,7 @@ export default function ExamSessionPage({ params }: { params: { id: string } }) 
               </div>
             </div>
           </div>
-          
+
           {/* 进度条 */}
           <div className="mt-4">
             <div className="flex justify-between text-sm text-gray-600 mb-2">
@@ -240,7 +240,7 @@ export default function ExamSessionPage({ params }: { params: { id: string } }) 
               <span>{Math.round(getProgress())}%</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2">
-              <div 
+              <div
                 className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                 style={{ width: `${getProgress()}%` }}
               ></div>
@@ -258,11 +258,10 @@ export default function ExamSessionPage({ params }: { params: { id: string } }) 
                     第 {currentQuestion + 1} 题 / 共 {session.questions.length} 题
                   </h2>
                   <div className="flex items-center gap-2">
-                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                      currentQ.type === 'multiple' 
-                        ? 'bg-purple-100 text-purple-800' 
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${currentQ.type === 'multiple'
+                        ? 'bg-purple-100 text-purple-800'
                         : 'bg-blue-100 text-blue-800'
-                    }`}>
+                      }`}>
                       {currentQ.type === 'multiple' ? '多选题' : '单选题'}
                     </span>
                     {currentQ.category && (
@@ -288,21 +287,20 @@ export default function ExamSessionPage({ params }: { params: { id: string } }) 
                   if (!option || option.trim() === '' || option.trim().toLowerCase() === 'blank') {
                     return null;
                   }
-                  
-                  const isSelected = currentQ.type === 'multiple' 
+
+                  const isSelected = currentQ.type === 'multiple'
                     ? (answers[currentQuestion] as number[] || []).includes(index)
                     : answers[currentQuestion] === index;
-                  
+
                   return (
                     <label
                       key={index}
-                      className={`block p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                        isSelected
+                      className={`block p-4 border-2 rounded-lg cursor-pointer transition-all ${isSelected
                           ? currentQ.type === 'multiple'
                             ? 'border-purple-500 bg-purple-50'
                             : 'border-blue-500 bg-blue-50'
                           : 'border-gray-200 hover:border-gray-300'
-                      }`}
+                        }`}
                     >
                       <div className="flex items-center">
                         <input
@@ -316,11 +314,10 @@ export default function ExamSessionPage({ params }: { params: { id: string } }) 
                               handleSingleAnswerChange(currentQuestion, index);
                             }
                           }}
-                          className={`mr-3 ${
-                            currentQ.type === 'multiple' 
-                              ? 'text-purple-600' 
+                          className={`mr-3 ${currentQ.type === 'multiple'
+                              ? 'text-purple-600'
                               : 'text-blue-600'
-                          }`}
+                            }`}
                         />
                         <span className="text-gray-700">
                           <strong>{String.fromCharCode(65 + index)}.</strong> {option}
@@ -340,7 +337,7 @@ export default function ExamSessionPage({ params }: { params: { id: string } }) 
                 >
                   上一题
                 </button>
-                
+
                 {currentQuestion === session.questions.length - 1 ? (
                   <button
                     onClick={handleSubmit}
@@ -367,33 +364,31 @@ export default function ExamSessionPage({ params }: { params: { id: string } }) 
               <h3 className="text-lg font-semibold text-gray-800 mb-4">题目导航</h3>
               <div className="grid grid-cols-5 gap-2">
                 {session.questions.map((question, index) => {
-                  const isAnswered = question.type === 'multiple' 
+                  const isAnswered = question.type === 'multiple'
                     ? Array.isArray(answers[index]) && (answers[index] as number[]).length > 0
                     : answers[index] !== -1;
-                  
+
                   return (
                     <button
                       key={index}
                       onClick={() => setCurrentQuestion(index)}
-                      className={`relative w-full h-10 rounded-lg text-sm font-medium transition-colors ${
-                        index === currentQuestion
+                      className={`relative w-full h-10 rounded-lg text-sm font-medium transition-colors ${index === currentQuestion
                           ? 'bg-blue-600 text-white'
                           : isAnswered
-                          ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
+                            ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
                     >
                       {index + 1}
                       {question.type === 'multiple' && (
-                        <div className={`absolute -top-1 -right-1 w-3 h-3 rounded-full ${
-                          index === currentQuestion ? 'bg-purple-300' : 'bg-purple-500'
-                        }`}></div>
+                        <div className={`absolute -top-1 -right-1 w-3 h-3 rounded-full ${index === currentQuestion ? 'bg-purple-300' : 'bg-purple-500'
+                          }`}></div>
                       )}
                     </button>
                   );
                 })}
               </div>
-              
+
               <div className="mt-6 space-y-3">
                 <div className="flex items-center text-sm">
                   <div className="w-4 h-4 bg-blue-600 rounded mr-2"></div>

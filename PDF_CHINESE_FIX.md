@@ -17,28 +17,28 @@ jsPDF默认使用的字体不支持中文字符，导致中文显示为乱码。
 将PDF中的所有中文标签改为英文，避免乱码问题：
 
 #### 修改内容对照表：
-| 中文标签 | 英文标签 |
-|---------|---------|
+| 中文标签         | 英文标签                  |
+| ---------------- | ------------------------- |
 | 在线测评结果报告 | Online Exam Result Report |
-| 考生姓名 | Student Name |
-| 考试开始时间 | Start Time |
-| 考试结束时间 | End Time |
-| 考试用时 | Duration |
-| 成绩统计 | Score Summary |
-| 总题数 | Total Questions |
-| 正确题数 | Correct Answers |
-| 错误题数 | Wrong Answers |
-| 正确率 | Accuracy Rate |
-| 考试状态 | Status |
-| 已完成 | Completed |
-| 进行中 | In Progress |
-| 分类统计 | Category Statistics |
-| 详细答题情况 | Detailed Answer Records |
-| 多选题 | Multiple Choice |
-| 单选题 | Single Choice |
-| 正确答案 | Correct Answer |
-| 您的答案 | Your Answer |
-| 解析 | Explanation |
+| 考生姓名         | Student Name              |
+| 考试开始时间     | Start Time                |
+| 考试结束时间     | End Time                  |
+| 考试用时         | Duration                  |
+| 成绩统计         | Score Summary             |
+| 总题数           | Total Questions           |
+| 正确题数         | Correct Answers           |
+| 错误题数         | Wrong Answers             |
+| 正确率           | Accuracy Rate             |
+| 考试状态         | Status                    |
+| 已完成           | Completed                 |
+| 进行中           | In Progress               |
+| 分类统计         | Category Statistics       |
+| 详细答题情况     | Detailed Answer Records   |
+| 多选题           | Multiple Choice           |
+| 单选题           | Single Choice             |
+| 正确答案         | Correct Answer            |
+| 您的答案         | Your Answer               |
+| 解析             | Explanation               |
 
 #### 代码示例：
 ```typescript

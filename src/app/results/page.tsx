@@ -121,7 +121,7 @@ export default function ResultsPage() {
             >
               {exportingAll ? '导出中...' : '              导出CSV'}
             </button>
-            <Link 
+            <Link
               href="/"
               className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
             >
@@ -167,7 +167,7 @@ export default function ResultsPage() {
               </div>
               <div className="bg-white rounded-lg shadow-lg p-6 text-center">
                 <div className="text-3xl font-bold text-purple-600 mb-2">
-                  {sessions.filter(s => s.status === 'completed').length > 0 
+                  {sessions.filter(s => s.status === 'completed').length > 0
                     ? (sessions.filter(s => s.status === 'completed').reduce((sum, s) => sum + s.score, 0) / sessions.filter(s => s.status === 'completed').length).toFixed(1)
                     : '0'}%
                 </div>

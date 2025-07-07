@@ -42,7 +42,7 @@ export default function ResultsPage({ params }: { params: { id: string } }) {
   const fetchResult = async () => {
     try {
       const response = await fetch(`/api/export?sessionId=${params.id}&format=json`);
-      
+
       if (response.ok) {
         const data = await response.json();
         setResult(data);
@@ -184,7 +184,7 @@ export default function ResultsPage({ params }: { params: { id: string } }) {
                   </div>
                   <div className="mt-2">
                     <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
+                      <div
                         className="bg-blue-600 h-2 rounded-full"
                         style={{ width: `${stats.percentage}%` }}
                       ></div>
@@ -204,23 +204,23 @@ export default function ResultsPage({ params }: { params: { id: string } }) {
               {result.session.questions.map((question, index) => {
                 const userAnswer = result.session.answers[index];
                 let isCorrect = false;
-                
+
                 if (question.type === 'multiple') {
                   // 多选题：比较数组
-                  const correctAnswerArray = Array.isArray(question.correctAnswer) 
-                    ? question.correctAnswer 
+                  const correctAnswerArray = Array.isArray(question.correctAnswer)
+                    ? question.correctAnswer
                     : [question.correctAnswer];
-                  const userAnswerArray = Array.isArray(userAnswer) 
-                    ? userAnswer 
+                  const userAnswerArray = Array.isArray(userAnswer)
+                    ? userAnswer
                     : [userAnswer];
-                  
+
                   isCorrect = correctAnswerArray.length === userAnswerArray.length &&
-                             correctAnswerArray.every((ans: number) => userAnswerArray.includes(ans));
+                    correctAnswerArray.every((ans: number) => userAnswerArray.includes(ans));
                 } else {
                   // 单选题：直接比较
                   isCorrect = userAnswer === question.correctAnswer;
                 }
-                
+
                 return (
                   <div key={index} className="border border-gray-200 rounded-lg p-6">
                     <div className="flex items-start justify-between mb-4">
@@ -228,50 +228,47 @@ export default function ResultsPage({ params }: { params: { id: string } }) {
                         <h3 className="font-semibold text-gray-800">
                           {index + 1}. {question.question}
                         </h3>
-                        <span className={`inline-block mt-2 px-2 py-1 rounded-full text-xs font-medium ${
-                          question.type === 'multiple' 
-                            ? 'bg-purple-100 text-purple-800' 
+                        <span className={`inline-block mt-2 px-2 py-1 rounded-full text-xs font-medium ${question.type === 'multiple'
+                            ? 'bg-purple-100 text-purple-800'
                             : 'bg-blue-100 text-blue-800'
-                        }`}>
+                          }`}>
                           {question.type === 'multiple' ? '多选题' : '单选题'}
                         </span>
                       </div>
-                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                        isCorrect 
-                          ? 'bg-green-100 text-green-800' 
+                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${isCorrect
+                          ? 'bg-green-100 text-green-800'
                           : 'bg-red-100 text-red-800'
-                      }`}>
+                        }`}>
                         {isCorrect ? '正确' : '错误'}
                       </span>
                     </div>
-                    
+
                     <div className="space-y-2">
                       {question.options.map((option: string, optionIndex: number) => {
                         // 过滤掉空白或BLANK的选项
                         if (!option || option.trim() === '' || option.trim().toLowerCase() === 'blank') {
                           return null;
                         }
-                        
-                        const correctAnswerArray = Array.isArray(question.correctAnswer) 
-                          ? question.correctAnswer 
+
+                        const correctAnswerArray = Array.isArray(question.correctAnswer)
+                          ? question.correctAnswer
                           : [question.correctAnswer];
-                        const userAnswerArray = Array.isArray(userAnswer) 
-                          ? userAnswer 
+                        const userAnswerArray = Array.isArray(userAnswer)
+                          ? userAnswer
                           : [userAnswer];
-                        
+
                         const isUserAnswer = userAnswerArray.includes(optionIndex);
                         const isCorrectAnswer = correctAnswerArray.includes(optionIndex);
-                        
+
                         return (
                           <div
                             key={optionIndex}
-                            className={`p-3 rounded-lg border ${
-                              isCorrectAnswer 
-                                ? 'border-green-500 bg-green-50' 
-                                : isUserAnswer 
-                                ? 'border-red-500 bg-red-50' 
-                                : 'border-gray-200'
-                            }`}
+                            className={`p-3 rounded-lg border ${isCorrectAnswer
+                                ? 'border-green-500 bg-green-50'
+                                : isUserAnswer
+                                  ? 'border-red-500 bg-red-50'
+                                  : 'border-gray-200'
+                              }`}
                           >
                             <div className="flex items-center justify-between">
                               <span className="text-gray-700">
@@ -290,7 +287,7 @@ export default function ResultsPage({ params }: { params: { id: string } }) {
                         );
                       }).filter(Boolean)}
                     </div>
-                    
+
                     {question.explanation && (
                       <div className="mt-4 p-3 bg-blue-50 rounded-lg">
                         <p className="text-sm text-blue-800">
