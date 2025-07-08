@@ -70,15 +70,17 @@ export async function POST(request: NextRequest) {
     
     // 处理从JSON加载的日期字符串
     const startTime = session.startTime instanceof Date ? session.startTime : new Date(session.startTime);
-    const duration = Math.round((endTime.getTime() - startTime.getTime()) / 60000);
+    const durationInMinutes = Math.round((endTime.getTime() - startTime.getTime()) / 60000);
+    const durationInSeconds = Math.round((endTime.getTime() - startTime.getTime()) / 1000);
     
-    // 更新会话
+    // 更新会话 - 保存分钟数用于兼容，但优先保存秒数
     database.updateSession(sessionId, {
       answers,
       score,
       endTime,
       status: 'completed',
-      duration
+      duration: durationInMinutes,
+      durationInSeconds
     });
     
     // 获取更新后的会话

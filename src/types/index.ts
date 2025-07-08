@@ -21,6 +21,7 @@ export interface ExamSession {
   startTime: Date;
   endTime?: Date;
   duration?: number; // in minutes
+  durationInSeconds?: number; // in seconds, more precise
   status: 'in-progress' | 'completed' | 'expired';
   // 可选：存储考试配置
   config?: {

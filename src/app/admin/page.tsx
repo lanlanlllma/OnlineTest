@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import AdminLogin from '@/components/AdminLogin';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 
 interface Stats {
     totalQuestions: number;
@@ -23,14 +25,17 @@ interface ExamSession {
 }
 
 export default function AdminPortal() {
+    const { isAuthenticated, loading: authLoading, login, logout } = useAdminAuth();
     const [stats, setStats] = useState<Stats | null>(null);
     const [recentSessions, setRecentSessions] = useState<ExamSession[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetchStats();
-        fetchRecentSessions();
-    }, []);
+        if (isAuthenticated) {
+            fetchStats();
+            fetchRecentSessions();
+        }
+    }, [isAuthenticated]);
 
     const fetchStats = async () => {
         try {
@@ -65,6 +70,33 @@ export default function AdminPortal() {
         }
     };
 
+    // 如果正在加载认证状态，显示加载中
+    if (authLoading) {
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 flex items-center justify-center">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+                    <p className="text-gray-600">正在验证身份...</p>
+                </div>
+            </div>
+        );
+    }
+
+    // 如果未认证，显示登录页面
+    if (!isAuthenticated) {
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100">
+                <div className="container mx-auto px-4 py-8">
+                    <div className="text-center mb-8">
+                        <h1 className="text-4xl font-bold text-gray-800 mb-4">管理员登录</h1>
+                        <p className="text-gray-600">请输入管理员密码以访问管理端</p>
+                    </div>
+                    <AdminLogin onLogin={login} />
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100">
             <div className="container mx-auto px-4 py-8">
@@ -79,8 +111,15 @@ export default function AdminPortal() {
                         </svg>
                         返回门户
                     </Link>
-                    <h1 className="text-2xl font-bold text-gray-800">管理端</h1>
-                    <div></div>
+                    <div className="flex items-center space-x-4">
+                        <h1 className="text-2xl font-bold text-gray-800">管理端</h1>
+                        <button
+                            onClick={logout}
+                            className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm"
+                        >
+                            退出登录
+                        </button>
+                    </div>
                 </div>
 
                 <div className="text-center mb-12">

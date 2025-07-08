@@ -2,8 +2,11 @@
 
 import { useState, useRef } from 'react';
 import Link from 'next/link';
+import AdminLogin from '@/components/AdminLogin';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 
 export default function UploadPage() {
+  const { isAuthenticated, loading: authLoading, login, logout } = useAdminAuth();
   const [uploading, setUploading] = useState(false);
   const [uploadResult, setUploadResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
@@ -67,21 +70,70 @@ export default function UploadPage() {
     }
   };
 
+  // 如果正在加载认证状态，显示加载中
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">正在验证身份...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // 如果未认证，显示登录页面
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+        <div className="container mx-auto px-4 py-8">
+          <div className="text-center mb-8">
+            <Link
+              href="/admin"
+              className="text-blue-600 hover:text-blue-800 mb-4 inline-block"
+            >
+              ← 返回管理端
+            </Link>
+            <h1 className="text-4xl font-bold text-gray-800 mb-4">管理员登录</h1>
+            <p className="text-gray-600">请输入管理员密码以访问题目管理</p>
+          </div>
+          <AdminLogin onLogin={login} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
+            <Link
+              href="/admin"
+              className="text-blue-600 hover:text-blue-800 mb-2 inline-block"
+            >
+              ← 返回管理端
+            </Link>
             <h1 className="text-3xl font-bold text-gray-800 mb-2">题目管理</h1>
             <p className="text-gray-600">上传Excel文件导入题目到系统</p>
           </div>
-          <Link
-            href="/"
-            className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
+          <button
+            onClick={logout}
+            className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm"
           >
-            返回首页
-          </Link>
+            退出登录
+          </button>
+        </div>
+
+        {/* Actions */}
+        <div className="flex items-center space-x-4 mb-6">
+          <a
+            href="/api/sample-excel"
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            下载模板
+          </a>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

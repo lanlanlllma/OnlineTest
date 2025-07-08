@@ -28,20 +28,33 @@ interface ExamResult {
   };
 }
 
-export default function ResultsPage({ params }: { params: { id: string } }) {
+export default function ResultsPage({ params }: { params: Promise<{ id: string }> }) {
   const [result, setResult] = useState<ExamResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showDetails, setShowDetails] = useState(false);
+  const [sessionId, setSessionId] = useState<string | null>(null);
   // 移除导出功能相关状态
 
   useEffect(() => {
-    fetchResult();
-  }, []);
+    async function getParams() {
+      const resolvedParams = await params;
+      setSessionId(resolvedParams.id);
+    }
+    getParams();
+  }, [params]);
+
+  useEffect(() => {
+    if (sessionId) {
+      fetchResult();
+    }
+  }, [sessionId]);
 
   const fetchResult = async () => {
+    if (!sessionId) return;
+    
     try {
-      const response = await fetch(`/api/export?sessionId=${params.id}&format=json`);
+      const response = await fetch(`/api/export?sessionId=${sessionId}&format=json`);
 
       if (response.ok) {
         const data = await response.json();

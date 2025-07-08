@@ -24,7 +24,7 @@ interface ExamSession {
   status: string;
 }
 
-export default function ExamSessionPage({ params }: { params: { id: string } }) {
+export default function ExamSessionPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
   const [session, setSession] = useState<ExamSession | null>(null);
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -33,10 +33,21 @@ export default function ExamSessionPage({ params }: { params: { id: string } }) 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [sessionId, setSessionId] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchSession();
-  }, []);
+    async function getParams() {
+      const resolvedParams = await params;
+      setSessionId(resolvedParams.id);
+    }
+    getParams();
+  }, [params]);
+
+  useEffect(() => {
+    if (sessionId) {
+      fetchSession();
+    }
+  }, [sessionId]);
 
   useEffect(() => {
     if (timeLeft === null) return;
@@ -56,8 +67,10 @@ export default function ExamSessionPage({ params }: { params: { id: string } }) 
   }, [timeLeft]);
 
   const fetchSession = async () => {
+    if (!sessionId) return;
+    
     try {
-      const response = await fetch(`/api/exam?sessionId=${params.id}`);
+      const response = await fetch(`/api/exam?sessionId=${sessionId}`);
 
       if (response.ok) {
         const data = await response.json();
@@ -105,7 +118,7 @@ export default function ExamSessionPage({ params }: { params: { id: string } }) 
   };
 
   const handleSubmit = async () => {
-    if (submitting) return;
+    if (submitting || !sessionId) return;
 
     setSubmitting(true);
     try {
@@ -115,7 +128,7 @@ export default function ExamSessionPage({ params }: { params: { id: string } }) 
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          sessionId: params.id,
+          sessionId: sessionId,
           answers,
         }),
       });
@@ -123,7 +136,7 @@ export default function ExamSessionPage({ params }: { params: { id: string } }) 
       if (response.ok) {
         const result = await response.json();
         // 跳转到结果页面
-        router.push(`/results/${params.id}`);
+        router.push(`/results/${sessionId}`);
       } else {
         const data = await response.json();
         setError(data.error || '提交失败');

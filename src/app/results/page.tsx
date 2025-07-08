@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import AdminLogin from '@/components/AdminLogin';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 
 interface ExamSession {
   id: string;
@@ -11,17 +13,21 @@ interface ExamSession {
   startTime: string;
   endTime?: string;
   duration?: number;
+  durationInSeconds?: number;
   status: string;
 }
 
 export default function ResultsPage() {
+  const { isAuthenticated, loading: authLoading, login, logout } = useAdminAuth();
   const [sessions, setSessions] = useState<ExamSession[]>([]);
   const [loading, setLoading] = useState(true);
   const [exportingAll, setExportingAll] = useState(false);
 
   useEffect(() => {
-    fetchSessions();
-  }, []);
+    if (isAuthenticated) {
+      fetchSessions();
+    }
+  }, [isAuthenticated]);
 
   const fetchSessions = async () => {
     try {
@@ -83,6 +89,35 @@ export default function ResultsPage() {
     }
   };
 
+  const formatDuration = (session: ExamSession) => {
+    if (session.status !== 'completed' || !session.endTime) {
+      return '-';
+    }
+
+    // 优先使用精确的秒数
+    let totalSeconds = session.durationInSeconds;
+
+    // 如果没有秒数，使用分钟数
+    if (totalSeconds === undefined && session.duration !== undefined && session.duration > 0) {
+      totalSeconds = session.duration * 60;
+    }
+
+    // 如果都没有，计算实际用时
+    if (totalSeconds === undefined) {
+      const startTime = new Date(session.startTime);
+      const endTime = new Date(session.endTime);
+      totalSeconds = Math.round((endTime.getTime() - startTime.getTime()) / 1000);
+    }
+
+    if (totalSeconds < 60) {
+      return `${totalSeconds} 秒`;
+    } else {
+      const minutes = Math.floor(totalSeconds / 60);
+      const seconds = totalSeconds % 60;
+      return seconds > 0 ? `${minutes} 分 ${seconds} 秒` : `${minutes} 分钟`;
+    }
+  };
+
   const getStatusText = (status: string) => {
     switch (status) {
       case 'completed':
@@ -104,30 +139,71 @@ export default function ResultsPage() {
     return 'text-red-600';
   };
 
+  // 如果正在加载认证状态，显示加载中
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">正在验证身份...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // 如果未认证，显示登录页面
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+        <div className="container mx-auto px-4 py-8">
+          <div className="text-center mb-8">
+            <Link
+              href="/admin"
+              className="text-blue-600 hover:text-blue-800 mb-4 inline-block"
+            >
+              ← 返回管理端
+            </Link>
+            <h1 className="text-4xl font-bold text-gray-800 mb-4">管理员登录</h1>
+            <p className="text-gray-600">请输入管理员密码以访问考试记录管理</p>
+          </div>
+          <AdminLogin onLogin={login} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
+            <Link
+              href="/admin"
+              className="text-blue-600 hover:text-blue-800 mb-2 inline-block"
+            >
+              ← 返回管理端
+            </Link>
             <h1 className="text-3xl font-bold text-gray-800 mb-2">考试记录管理</h1>
             <p className="text-gray-600">查看所有考试记录和成绩统计</p>
           </div>
-          <div className="flex items-center space-x-4">
-            <button
-              onClick={handleExportAll}
-              disabled={exportingAll || sessions.length === 0}
-              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
-            >
-              {exportingAll ? '导出中...' : '              导出CSV'}
-            </button>
-            <Link
-              href="/"
-              className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
-            >
-              返回首页
-            </Link>
-          </div>
+          <button
+            onClick={logout}
+            className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm"
+          >
+            退出登录
+          </button>
+        </div>
+
+        {/* Actions */}
+        <div className="flex items-center space-x-4 mb-6">
+          <button
+            onClick={handleExportAll}
+            disabled={exportingAll || sessions.length === 0}
+            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+          >
+            {exportingAll ? '导出中...' : '导出CSV'}
+          </button>
         </div>
 
         {loading ? (
@@ -229,7 +305,7 @@ export default function ResultsPage() {
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {session.duration ? `${session.duration} 分钟` : '-'}
+                          {formatDuration(session)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(session.status)}`}>

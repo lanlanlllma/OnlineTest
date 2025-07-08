@@ -14,6 +14,7 @@ export async function GET(request: NextRequest) {
       startTime: session.startTime,
       endTime: session.endTime,
       duration: session.duration,
+      durationInSeconds: session.durationInSeconds,
       status: session.status
     }));
     

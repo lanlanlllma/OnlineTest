@@ -2,8 +2,11 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import AdminLogin from '@/components/AdminLogin';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 
 export default function AdminExport() {
+    const { isAuthenticated, loading: authLoading, login, logout } = useAdminAuth();
     const [exporting, setExporting] = useState(false);
     const [exportType, setExportType] = useState<'all' | 'summary'>('all');
 
@@ -42,6 +45,39 @@ export default function AdminExport() {
             setExporting(false);
         }
     };
+
+    // 如果正在加载认证状态，显示加载中
+    if (authLoading) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                    <p className="text-gray-600">正在验证身份...</p>
+                </div>
+            </div>
+        );
+    }
+
+    // 如果未认证，显示登录页面
+    if (!isAuthenticated) {
+        return (
+            <div className="min-h-screen bg-gray-50">
+                <div className="container mx-auto px-4 py-8">
+                    <div className="text-center mb-8">
+                        <Link
+                            href="/admin"
+                            className="text-blue-600 hover:text-blue-800 mb-4 inline-block"
+                        >
+                            ← 返回管理端
+                        </Link>
+                        <h1 className="text-4xl font-bold text-gray-800 mb-4">管理员登录</h1>
+                        <p className="text-gray-600">请输入管理员密码以访问批量导出功能</p>
+                    </div>
+                    <AdminLogin onLogin={login} />
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100">

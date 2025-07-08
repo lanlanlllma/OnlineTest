@@ -26,12 +26,20 @@ interface ExamSession {
     questions: Question[];
 }
 
-export default function StudentResultDetail({ params }: { params: { id: string } }) {
-    const sessionId = params.id;
+export default function StudentResultDetail({ params }: { params: Promise<{ id: string }> }) {
+    const [sessionId, setSessionId] = useState<string | null>(null);
     const [session, setSession] = useState<ExamSession | null>(null);
     const [loading, setLoading] = useState(true);
     const [showExplanations, setShowExplanations] = useState(false);
     const [filter, setFilter] = useState<'all' | 'correct' | 'incorrect'>('all');
+
+    useEffect(() => {
+        async function getParams() {
+            const resolvedParams = await params;
+            setSessionId(resolvedParams.id);
+        }
+        getParams();
+    }, [params]);
 
     useEffect(() => {
         if (sessionId) {

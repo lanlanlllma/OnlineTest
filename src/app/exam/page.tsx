@@ -163,6 +163,34 @@ export default function ExamPage() {
   };
 
   const getTemplateIcon = (template: ExamTemplate) => {
+    // 图标名称到emoji的映射
+    const iconMap: { [key: string]: string } = {
+      'BookOpen': '📚',
+      'Clock': '⏰',
+      'Target': '🎯',
+      'Award': '🏆',
+      'Brain': '🧠',
+      'CheckCircle': '✅',
+      'Star': '⭐',
+      'Trophy': '🏆',
+      'Bookmark': '🔖',
+      'FileText': '📄',
+      'Zap': '⚡',
+      'Shield': '🛡️',
+      'Flame': '🔥',
+      'Gem': '💎',
+      'Heart': '❤️',
+      'Lightbulb': '💡',
+      'Rocket': '🚀',
+      'Sparkles': '✨',
+      'ThumbsUp': '👍',
+      'Users': '👥'
+    };
+
+    if (template.icon && iconMap[template.icon]) {
+      return iconMap[template.icon];
+    }
+
     return template.icon || '📝';
   };
 
@@ -227,8 +255,8 @@ export default function ExamPage() {
                   key={template.id}
                   onClick={() => handleTemplateSelect(template)}
                   className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${selectedTemplate?.id === template.id
-                      ? 'border-blue-500 bg-blue-50'
-                      : 'border-gray-200 hover:border-gray-300'
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-gray-200 hover:border-gray-300'
                     }`}
                   style={selectedTemplate?.id === template.id ? undefined : getTemplateColor(template)}
                 >
@@ -265,8 +293,8 @@ export default function ExamPage() {
             <div
               onClick={handleCustomSelect}
               className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${showCustomForm
-                  ? 'border-blue-500 bg-blue-50'
-                  : 'border-gray-200 hover:border-gray-300'
+                ? 'border-blue-500 bg-blue-50'
+                : 'border-gray-200 hover:border-gray-300'
                 }`}
             >
               <div className="flex items-center mb-2">
