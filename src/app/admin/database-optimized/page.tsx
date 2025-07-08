@@ -76,7 +76,7 @@ export default function OptimizedDatabasePage() {
             } else {
                 alert('备份创建失败');
             }
-        } catch (error) {
+        } catch {
             alert('备份创建失败');
         }
     };
@@ -107,7 +107,7 @@ export default function OptimizedDatabasePage() {
             } else {
                 alert('操作失败');
             }
-        } catch (error) {
+        } catch {
             alert('操作失败');
         }
     };

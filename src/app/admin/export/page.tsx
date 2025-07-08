@@ -6,7 +6,7 @@ import AdminLogin from '@/components/AdminLogin';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 
 export default function AdminExport() {
-    const { isAuthenticated, loading: authLoading, login, logout } = useAdminAuth();
+    const { isAuthenticated, loading: authLoading, login } = useAdminAuth();
     const [exporting, setExporting] = useState(false);
     const [exportType, setExportType] = useState<'all' | 'summary'>('all');
 

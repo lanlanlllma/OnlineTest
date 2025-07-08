@@ -32,6 +32,7 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
 
 # vercel
 .vercel
@@ -46,3 +47,14 @@ next-env.d.ts
 
 ._*
 **.xlsx
+
+# 生产环境相关
+/logs/
+/backup/
+nginx/ssl/
+*.log
+*.pid
+*.gz
+
+# PM2
+.pm2/

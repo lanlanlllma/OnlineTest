@@ -36,7 +36,7 @@ interface AnalyticsData {
 }
 
 export default function AdminAnalytics() {
-    const { isAuthenticated, loading: authLoading, login, logout } = useAdminAuth();
+    const { isAuthenticated, loading: authLoading, login } = useAdminAuth();
     const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
     const [loading, setLoading] = useState(true);
 

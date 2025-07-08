@@ -47,7 +47,7 @@ export default function DatabaseManagement() {
             } else {
                 alert('备份失败');
             }
-        } catch (error) {
+        } catch {
             alert('备份时发生错误');
         } finally {
             setActionLoading(null);
@@ -73,7 +73,7 @@ export default function DatabaseManagement() {
             } else {
                 alert('清空失败');
             }
-        } catch (error) {
+        } catch {
             alert('清空时发生错误');
         } finally {
             setActionLoading(null);

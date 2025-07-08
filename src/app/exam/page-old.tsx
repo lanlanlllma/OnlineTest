@@ -4,6 +4,24 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
+interface LocalExamTemplate {
+  id: string;
+  name: string;
+  description: string;
+  totalQuestions: number;
+  timeLimit: number;
+  icon: string;
+  color: string;
+}
+
+interface ExamFormData {
+  userName: string;
+  totalQuestions: number;
+  category?: string;
+  difficulty?: string;
+  timeLimit?: number;
+}
+
 interface ExamTemplate {
   id: string;
   name: string;
@@ -28,7 +46,7 @@ interface ExamConfig {
 }
 
 // 预设考试类型
-const examTemplates: ExamTemplate[] = [
+const examTemplates: LocalExamTemplate[] = [
   {
     id: 'quick',
     name: '快速测试',
@@ -111,8 +129,8 @@ export default function ExamPage() {
         ...prev,
         totalQuestions: template.totalQuestions,
         timeLimit: template.timeLimit,
-        category: template.category || '',
-        difficulty: template.difficulty || ''
+        category: '',
+        difficulty: ''
       }));
     }
   }, [selectedTemplate]);

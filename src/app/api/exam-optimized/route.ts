@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { optimizedDatabase } from '@/lib/database-optimized';
-import { ExamSession } from '@/types';
 
 // 创建考试会话（优化版本）
 export async function POST(request: NextRequest) {
