@@ -91,13 +91,13 @@ export default function ExamSessionPage({ params }: { params: Promise<{ id: stri
         }
       } else {
         const errorData = await response.json();
-        
+
         // 如果是超时自动提交，跳转到结果页面
         if (response.status === 410 && errorData.autoSubmitted) {
           router.push(`/results/${sessionId}`);
           return;
         }
-        
+
         setError(errorData.error || '获取考试信息失败');
       }
     } catch (err) {

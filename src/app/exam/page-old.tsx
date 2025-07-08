@@ -201,7 +201,7 @@ export default function ExamPage() {
             <h1 className="text-3xl font-bold text-gray-800 mb-2">考试配置</h1>
             <p className="text-gray-600">选择考试类型并开始答题</p>
           </div>
-          <Link 
+          <Link
             href="/"
             className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
           >
@@ -213,16 +213,15 @@ export default function ExamPage() {
           {/* 预设考试类型选择 */}
           <div className="bg-white rounded-xl shadow-lg p-8">
             <h2 className="text-xl font-semibold text-gray-800 mb-6">选择考试类型</h2>
-            
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
               {examTemplates.map((template) => (
                 <div
                   key={template.id}
-                  className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                    selectedTemplate === template.id
+                  className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${selectedTemplate === template.id
                       ? template.color + ' border-opacity-100'
                       : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
-                  }`}
+                    }`}
                   onClick={() => setSelectedTemplate(template.id)}
                 >
                   <div className="flex items-center mb-2">
@@ -256,7 +255,7 @@ export default function ExamPage() {
             {selectedTemplate === 'custom' && (
               <div className="space-y-4 mb-6 p-4 bg-gray-50 rounded-lg">
                 <h3 className="font-medium text-gray-700">自定义设置</h3>
-                
+
                 {/* 题目数量 */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -356,7 +355,7 @@ export default function ExamPage() {
           {/* 系统信息和说明 */}
           <div className="bg-white rounded-xl shadow-lg p-8">
             <h2 className="text-xl font-semibold text-gray-800 mb-6">系统信息</h2>
-            
+
             {stats ? (
               <div className="space-y-6">
                 {/* 当前配置预览 */}
