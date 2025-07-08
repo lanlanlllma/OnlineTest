@@ -4,6 +4,21 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
+interface ExamTemplate {
+  id: string;
+  name: string;
+  description: string;
+  totalQuestions: number;
+  timeLimit: number;
+  category?: string;
+  difficulty?: 'easy' | 'medium' | 'hard';
+  icon?: string;
+  color?: string;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 interface ExamConfig {
   userName: string;
   totalQuestions: number;
@@ -12,22 +27,47 @@ interface ExamConfig {
   timeLimit?: number;
 }
 
+interface Stats {
+  totalQuestions: number;
+  categories: string[];
+  difficulties: string[];
+}
+
 export default function ExamPage() {
-  const router = useRouter();
+  const [examTemplates, setExamTemplates] = useState<ExamTemplate[]>([]);
+  const [selectedTemplate, setSelectedTemplate] = useState<ExamTemplate | null>(null);
   const [config, setConfig] = useState<ExamConfig>({
     userName: '',
     totalQuestions: 10,
     category: '',
     difficulty: '',
-    timeLimit: 0
+    timeLimit: 30
   });
-  const [stats, setStats] = useState<any>(null);
+  const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(false);
+  const [templatesLoading, setTemplatesLoading] = useState(true);
+  const [showCustomForm, setShowCustomForm] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
+    fetchTemplates();
     fetchStats();
   }, []);
+
+  const fetchTemplates = async () => {
+    try {
+      const response = await fetch('/api/exam-templates?active=true');
+      if (response.ok) {
+        const data = await response.json();
+        setExamTemplates(data.templates || []);
+      }
+    } catch (error) {
+      console.error('获取考试模板失败:', error);
+    } finally {
+      setTemplatesLoading(false);
+    }
+  };
 
   const fetchStats = async () => {
     try {
@@ -41,14 +81,41 @@ export default function ExamPage() {
     }
   };
 
+  const handleTemplateSelect = (template: ExamTemplate) => {
+    setSelectedTemplate(template);
+    setConfig(prev => ({
+      ...prev,
+      totalQuestions: template.totalQuestions,
+      timeLimit: template.timeLimit,
+      category: template.category || '',
+      difficulty: template.difficulty || ''
+    }));
+    setShowCustomForm(false);
+  };
+
+  const handleCustomSelect = () => {
+    setSelectedTemplate(null);
+    setShowCustomForm(true);
+  };
+
   const handleStartExam = async () => {
     if (!config.userName.trim()) {
-      setError('请输入姓名');
+      setError('请输入您的姓名');
+      return;
+    }
+
+    if (config.totalQuestions < 1 || config.totalQuestions > 1000) {
+      setError('题目数量必须在1-1000之间');
       return;
     }
 
     if (!stats || stats.totalQuestions === 0) {
-      setError('系统中没有题目，请先上传题目');
+      setError('题库中没有题目，请先导入题目');
+      return;
+    }
+
+    if (config.totalQuestions > stats.totalQuestions) {
+      setError(`题目数量不能超过题库总数 (${stats.totalQuestions})`);
       return;
     }
 
@@ -61,237 +128,274 @@ export default function ExamPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(config),
+        body: JSON.stringify({
+          userName: config.userName,
+          totalQuestions: config.totalQuestions,
+          category: config.category || undefined,
+          difficulty: config.difficulty || undefined,
+          timeLimit: config.timeLimit || undefined,
+          templateId: selectedTemplate?.id
+        }),
       });
 
-      const data = await response.json();
-
       if (response.ok) {
-        // 跳转到答题页面
+        const data = await response.json();
         router.push(`/exam/${data.sessionId}`);
       } else {
-        setError(data.error || '创建考试失败');
+        const errorData = await response.json();
+        setError(errorData.error || '创建考试失败');
       }
-    } catch (err) {
-      setError('创建考试时发生错误');
+    } catch (error) {
+      console.error('创建考试失败:', error);
+      setError('创建考试失败，请重试');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleConfigChange = (field: keyof ExamConfig, value: string | number) => {
-    setConfig(prev => ({
-      ...prev,
-      [field]: value
-    }));
+  const getDifficultyLabel = (difficulty?: string) => {
+    switch (difficulty) {
+      case 'easy': return '简单';
+      case 'medium': return '中等';
+      case 'hard': return '困难';
+      default: return '不限';
+    }
   };
 
+  const getTemplateIcon = (template: ExamTemplate) => {
+    return template.icon || '📝';
+  };
+
+  const getTemplateColor = (template: ExamTemplate) => {
+    if (template.color) {
+      return {
+        backgroundColor: template.color + '20',
+        borderColor: template.color,
+        color: template.color
+      };
+    }
+    return {
+      backgroundColor: '#3B82F620',
+      borderColor: '#3B82F6',
+      color: '#3B82F6'
+    };
+  };
+
+  if (templatesLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-lg">加载中...</div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      <div className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">考试配置</h1>
-            <p className="text-gray-600">设置考试参数并开始答题</p>
-          </div>
-          <Link 
-            href="/"
-            className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-4xl mx-auto px-4">
+        <div className="text-center mb-8">
+          <Link
+            href="/portal"
+            className="inline-flex items-center text-blue-600 hover:text-blue-800 mb-4"
           >
-            返回首页
+            ← 返回门户
           </Link>
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">开始考试</h1>
+          <p className="text-gray-600">
+            {stats ? `题库共有 ${stats.totalQuestions} 道题目` : '正在加载题库信息...'}
+          </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* 配置表单 */}
-          <div className="bg-white rounded-xl shadow-lg p-8">
-            <h2 className="text-xl font-semibold text-gray-800 mb-6">考试设置</h2>
-            
-            <div className="space-y-6">
-              {/* 姓名 */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  考生姓名 *
-                </label>
-                <input
-                  type="text"
-                  value={config.userName}
-                  onChange={(e) => handleConfigChange('userName', e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="请输入您的姓名"
-                />
-              </div>
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-red-600">{error}</p>
+          </div>
+        )}
 
-              {/* 题目数量 */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  题目数量
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  max={stats?.totalQuestions || 100}
-                  value={config.totalQuestions}
-                  onChange={(e) => handleConfigChange('totalQuestions', parseInt(e.target.value) || 1)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-                {stats && (
-                  <p className="text-sm text-gray-500 mt-1">
-                    系统中共有 {stats.totalQuestions} 道题目
-                  </p>
-                )}
-              </div>
+        {/* 考试模板选择 */}
+        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+          <h2 className="text-xl font-semibold mb-4">选择考试类型</h2>
 
-              {/* 题目分类 */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  题目分类（可选）
-                </label>
-                <select
-                  value={config.category}
-                  onChange={(e) => handleConfigChange('category', e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          {examTemplates.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-gray-500 mb-4">暂无可用的考试模板</p>
+              <p className="text-sm text-gray-400">请联系管理员配置考试模板</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+              {examTemplates.map((template) => (
+                <div
+                  key={template.id}
+                  onClick={() => handleTemplateSelect(template)}
+                  className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${selectedTemplate?.id === template.id
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  style={selectedTemplate?.id === template.id ? undefined : getTemplateColor(template)}
                 >
-                  <option value="">不限分类</option>
-                  {stats?.categories?.map((category: string) => (
-                    <option key={category} value={category}>
-                      {category}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* 难度选择 */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  难度等级（可选）
-                </label>
-                <select
-                  value={config.difficulty}
-                  onChange={(e) => handleConfigChange('difficulty', e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="">不限难度</option>
-                  <option value="easy">简单</option>
-                  <option value="medium">中等</option>
-                  <option value="hard">困难</option>
-                </select>
-              </div>
-
-              {/* 时间限制 */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  时间限制（分钟）
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  value={config.timeLimit}
-                  onChange={(e) => handleConfigChange('timeLimit', parseInt(e.target.value) || 0)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="0 表示不限时间"
-                />
-                <p className="text-sm text-gray-500 mt-1">
-                  设为 0 表示不限制时间
-                </p>
-              </div>
-
-              {error && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                  <div className="flex items-center">
-                    <svg className="w-5 h-5 text-red-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span className="text-red-700">{error}</span>
+                  <div className="flex items-center mb-2">
+                    <span className="text-2xl mr-2">{getTemplateIcon(template)}</span>
+                    <h3 className="font-semibold text-gray-800">{template.name}</h3>
                   </div>
+                  <p className="text-sm text-gray-600 mb-2">{template.description}</p>
+                  <div className="flex justify-between text-xs text-gray-500">
+                    <span>{template.totalQuestions} 题</span>
+                    <span>{template.timeLimit > 0 ? `${template.timeLimit} 分钟` : '不限时'}</span>
+                  </div>
+                  {template.category && (
+                    <div className="mt-2">
+                      <span className="inline-block bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded">
+                        {template.category}
+                      </span>
+                    </div>
+                  )}
+                  {template.difficulty && (
+                    <div className="mt-1">
+                      <span className="inline-block bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded">
+                        {getDifficultyLabel(template.difficulty)}
+                      </span>
+                    </div>
+                  )}
                 </div>
-              )}
+              ))}
+            </div>
+          )}
 
-              <button
-                onClick={handleStartExam}
-                disabled={loading || !stats || stats.totalQuestions === 0}
-                className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading ? '创建考试中...' : '开始考试'}
-              </button>
+          {/* 自定义选项 */}
+          <div className="mt-4 pt-4 border-t border-gray-200">
+            <div
+              onClick={handleCustomSelect}
+              className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${showCustomForm
+                  ? 'border-blue-500 bg-blue-50'
+                  : 'border-gray-200 hover:border-gray-300'
+                }`}
+            >
+              <div className="flex items-center mb-2">
+                <span className="text-2xl mr-2">⚙️</span>
+                <h3 className="font-semibold text-gray-800">自定义考试</h3>
+              </div>
+              <p className="text-sm text-gray-600">根据需要自定义题目数量和时间</p>
             </div>
           </div>
+        </div>
 
-          {/* 系统信息 */}
-          <div className="bg-white rounded-xl shadow-lg p-8">
-            <h2 className="text-xl font-semibold text-gray-800 mb-6">系统信息</h2>
-            
-            {stats ? (
-              <div className="space-y-6">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-blue-50 rounded-lg p-4 text-center">
-                    <div className="text-2xl font-bold text-blue-600 mb-1">
-                      {stats.totalQuestions}
-                    </div>
-                    <div className="text-sm text-gray-600">题目总数</div>
-                  </div>
-                  <div className="bg-green-50 rounded-lg p-4 text-center">
-                    <div className="text-2xl font-bold text-green-600 mb-1">
-                      {stats.categories.length}
-                    </div>
-                    <div className="text-sm text-gray-600">分类数量</div>
-                  </div>
+        {/* 考试配置表单 */}
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <h2 className="text-xl font-semibold mb-4">考试配置</h2>
+
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                姓名 *
+              </label>
+              <input
+                type="text"
+                value={config.userName}
+                onChange={(e) => setConfig({ ...config, userName: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="请输入您的姓名"
+              />
+            </div>
+
+            {showCustomForm && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    题目数量 *
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max={stats?.totalQuestions || 1000}
+                    value={config.totalQuestions}
+                    onChange={(e) => setConfig({ ...config, totalQuestions: Number(e.target.value) })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
                 </div>
-
-                {stats.categories.length > 0 && (
-                  <div>
-                    <h3 className="font-semibold text-gray-700 mb-3">可用分类</h3>
-                    <div className="flex flex-wrap gap-2">
-                      {stats.categories.map((category: string) => (
-                        <span
-                          key={category}
-                          className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm"
-                        >
-                          {category}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
 
                 <div>
-                  <h3 className="font-semibold text-gray-700 mb-3">考试说明</h3>
-                  <ul className="text-sm text-gray-600 space-y-2">
-                    <li>• 考试开始后无法修改配置</li>
-                    <li>• 每道题目只能选择一个答案</li>
-                    <li>• 可以随时查看答题进度</li>
-                    <li>• 提交后将立即显示成绩</li>
-                    <li>• 考试结果可以导出为PDF</li>
-                  </ul>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    考试时间 (分钟，0表示不限时)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="1440"
+                    value={config.timeLimit || 0}
+                    onChange={(e) => setConfig({ ...config, timeLimit: Number(e.target.value) || undefined })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
                 </div>
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                <p className="text-gray-600">加载系统信息中...</p>
-              </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    题目分类 (可选)
+                  </label>
+                  <select
+                    value={config.category || ''}
+                    onChange={(e) => setConfig({ ...config, category: e.target.value || undefined })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">所有分类</option>
+                    {stats?.categories.map(category => (
+                      <option key={category} value={category}>{category}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    难度等级 (可选)
+                  </label>
+                  <select
+                    value={config.difficulty || ''}
+                    onChange={(e) => setConfig({ ...config, difficulty: e.target.value || undefined })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">所有难度</option>
+                    {stats?.difficulties.map(difficulty => (
+                      <option key={difficulty} value={difficulty}>{getDifficultyLabel(difficulty)}</option>
+                    ))}
+                  </select>
+                </div>
+              </>
             )}
 
-            {stats && stats.totalQuestions === 0 && (
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mt-6">
-                <div className="flex items-center">
-                  <svg className="w-5 h-5 text-yellow-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                  </svg>
+            {/* 显示当前配置 */}
+            {(selectedTemplate || showCustomForm) && (
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h3 className="font-medium text-gray-800 mb-2">当前配置</h3>
+                <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
-                    <p className="text-yellow-700 font-medium">系统中暂无题目</p>
-                    <p className="text-yellow-600 text-sm">
-                      请先{' '}
-                      <Link href="/upload" className="underline">
-                        上传题目
-                      </Link>
-                      {' '}后再开始考试
-                    </p>
+                    <span className="text-gray-500">题目数量:</span>
+                    <span className="ml-2 font-medium">{config.totalQuestions} 题</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">考试时间:</span>
+                    <span className="ml-2 font-medium">
+                      {config.timeLimit && config.timeLimit > 0 ? `${config.timeLimit} 分钟` : '不限时'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">题目分类:</span>
+                    <span className="ml-2 font-medium">{config.category || '不限'}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">难度等级:</span>
+                    <span className="ml-2 font-medium">{getDifficultyLabel(config.difficulty)}</span>
                   </div>
                 </div>
               </div>
             )}
+          </div>
+
+          <div className="mt-6 flex justify-center">
+            <button
+              onClick={handleStartExam}
+              disabled={loading || !config.userName.trim() || (!selectedTemplate && !showCustomForm)}
+              className="bg-blue-600 text-white px-8 py-3 rounded-lg font-medium hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+            >
+              {loading ? '创建中...' : '开始考试'}
+            </button>
           </div>
         </div>
       </div>

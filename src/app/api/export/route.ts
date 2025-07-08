@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { database } from '@/lib/database';
 import { PDFExporter } from '@/lib/pdf-exporter';
 import { CSVExporter } from '@/lib/csv-exporter';
-import { ExamResult } from '@/types';
+import { ExamResult, Question } from '@/types';
 
 export async function GET(request: NextRequest) {
   try {
@@ -28,7 +28,10 @@ export async function GET(request: NextRequest) {
     let correctAnswers = 0;
     const categoryStats: { [key: string]: { correct: number; total: number } } = {};
     
-    session.questions.forEach((question, index) => {
+    // 根据questionIds获取题目
+    const questions = session.questionIds.map(id => database.getQuestionById(id)).filter(q => q !== undefined) as Question[];
+    
+    questions.forEach((question, index) => {
       const userAnswer = session.answers[index];
       let isCorrect = false;
       

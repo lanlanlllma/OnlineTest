@@ -36,7 +36,7 @@ export async function GET() {
     categories.forEach(category => {
       const categoryQuestions = questions.filter(q => q.category === category);
       const categorySessions = completedSessions.filter(session => 
-        session.questions.some(q => q.category === category)
+        session.config?.category === category
       );
       
       const categoryAverage = categorySessions.length > 0
@@ -57,7 +57,7 @@ export async function GET() {
     difficulties.forEach(difficulty => {
       const difficultyQuestions = questions.filter(q => q.difficulty === difficulty);
       const difficultySessions = completedSessions.filter(session => 
-        session.questions.some(q => q.difficulty === difficulty)
+        session.config?.difficulty === difficulty
       );
       
       const difficultyAverage = difficultySessions.length > 0

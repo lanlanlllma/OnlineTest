@@ -27,7 +27,10 @@ export async function GET(
 
     // 计算正确答案数
     let correctAnswers = 0;
-    session.questions.forEach((question: Question, index: number) => {
+    // 根据questionIds获取题目
+    const questions = session.questionIds.map(id => database.getQuestionById(id)).filter(q => q !== undefined) as Question[];
+    
+    questions.forEach((question: Question, index: number) => {
       const userAnswer = session.answers[index];
       let isCorrect = false;
       
@@ -53,7 +56,7 @@ export async function GET(
     });
 
     // 格式化题目数据，包含用户答案
-    const formattedQuestions = session.questions.map((question: Question, index: number) => {
+    const formattedQuestions = questions.map((question: Question, index: number) => {
       const userAnswer = session.answers[index];
       
       // 格式化正确答案

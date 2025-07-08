@@ -168,7 +168,7 @@ export default function AdminPortal() {
                 </div>
 
                 {/* Quick Actions */}
-                <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-12">
+                <div className="grid grid-cols-1 md:grid-cols-6 gap-6 mb-12">
                     <div className="bg-white rounded-lg shadow-lg p-6 text-center">
                         <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
                             <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -248,6 +248,22 @@ export default function AdminPortal() {
                             优化管理
                         </Link>
                     </div>
+
+                    <div className="bg-white rounded-lg shadow-lg p-6 text-center">
+                        <div className="w-12 h-12 bg-teal-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                            <svg className="w-6 h-6 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                        </div>
+                        <h4 className="font-semibold text-gray-800 mb-2">考试模板</h4>
+                        <p className="text-sm text-gray-600 mb-3">管理考试类型配置</p>
+                        <Link
+                            href="/admin/exam-templates"
+                            className="text-teal-600 hover:text-teal-800 text-sm font-medium"
+                        >
+                            配置模板
+                        </Link>
+                    </div>
                 </div>
 
                 {/* Available Categories */}
@@ -299,7 +315,7 @@ export default function AdminPortal() {
                                     </div>                    <div className="flex items-center space-x-4">
                                         <div className="text-right">
                                             <div className={`text-lg font-bold ${session.score >= 80 ? 'text-green-600' :
-                                                    session.score >= 60 ? 'text-yellow-600' : 'text-red-600'
+                                                session.score >= 60 ? 'text-yellow-600' : 'text-red-600'
                                                 }`}>
                                                 {session.score.toFixed(1)}%
                                             </div>

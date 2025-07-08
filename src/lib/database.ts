@@ -81,6 +81,10 @@ class PersistentDatabase {
     return this.questions;
   }
 
+  getQuestionById(id: string): Question | undefined {
+    return this.questions.find(q => q.id === id);
+  }
+
   getQuestionsByCategory(category: string): Question[] {
     return this.questions.filter(q => q.category === category);
   }

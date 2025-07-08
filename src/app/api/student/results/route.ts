@@ -16,8 +16,8 @@ export async function GET() {
       score: session.score,
       totalQuestions: session.totalQuestions,
       duration: session.duration || 0,
-      category: session.questions[0]?.category,
-      difficulty: session.questions[0]?.difficulty
+      category: session.config?.category,
+      difficulty: session.config?.difficulty
     }));
 
     return NextResponse.json({

@@ -25,7 +25,10 @@ export async function POST(request: NextRequest) {
     let correctAnswers = 0;
     const categoryStats: { [key: string]: { correct: number; total: number } } = {};
     
-    session.questions.forEach((question: Question, index: number) => {
+    // 根据questionIds获取题目数据
+    const questions = session.questionIds.map(id => database.getQuestionById(id)).filter(q => q !== undefined) as Question[];
+    
+    questions.forEach((question: Question, index: number) => {
       const userAnswer = answers[index];
       let isCorrect = false;
       

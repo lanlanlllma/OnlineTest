@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf';
-import { ExamResult, ExamSession } from '@/types';
+import { ExamResult, ExamSession, Question } from '@/types';
+import { database } from '@/lib/database';
 
 export class PDFExporter {
   static async exportExamResult(result: ExamResult): Promise<Buffer> {
@@ -82,7 +83,10 @@ export class PDFExporter {
     yPosition += 15;
     
     pdf.setFontSize(10);
-    session.questions.forEach((question, index) => {
+    // 根据questionIds获取题目
+    const questions = session.questionIds.map(id => database.getQuestionById(id)).filter(q => q !== undefined) as Question[];
+    
+    questions.forEach((question, index) => {
       if (yPosition > 250) {
         pdf.addPage();
         yPosition = 20;

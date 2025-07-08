@@ -27,6 +27,7 @@ export interface ExamSession {
     category?: string;
     difficulty?: string;
     timeLimit?: number;
+    templateId?: string;
   };
 }
 
@@ -51,4 +52,20 @@ export interface ExamConfig {
   difficulty?: 'easy' | 'medium' | 'hard';
   shuffleQuestions?: boolean;
   shuffleOptions?: boolean;
+}
+
+// 考试类型配置（由管理员配置）
+export interface ExamTemplate {
+  id: string;
+  name: string;
+  description: string;
+  totalQuestions: number;
+  timeLimit: number; // in minutes
+  category?: string;
+  difficulty?: 'easy' | 'medium' | 'hard';
+  icon?: string;
+  color?: string;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }

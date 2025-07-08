@@ -1,4 +1,5 @@
-import { ExamSession, ExamResult } from '@/types';
+import { ExamSession, ExamResult, Question } from '@/types';
+import { database } from '@/lib/database';
 
 export class CSVExporter {
   /**
@@ -37,7 +38,10 @@ export class CSVExporter {
     csvContent += 'Question Details\n';
     csvContent += 'Question,Type,Category,Difficulty,Your Answer,Correct Answer,Result\n';
     
-    session.questions.forEach((question, index) => {
+    // 根据questionIds获取题目
+    const questions = session.questionIds.map(id => database.getQuestionById(id)).filter(q => q !== undefined) as Question[];
+    
+    questions.forEach((question, index) => {
       const userAnswer = session.answers[index];
       let isCorrect = false;
       
