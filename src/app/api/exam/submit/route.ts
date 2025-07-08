@@ -20,6 +20,29 @@ export async function POST(request: NextRequest) {
     if (session.status === 'completed') {
       return NextResponse.json({ error: '考试已经完成' }, { status: 400 });
     }
+
+    if (session.status === 'expired') {
+      return NextResponse.json({ error: '考试时间已到' }, { status: 400 });
+    }
+
+    // 检查考试是否超时
+    if (session.config?.timeLimit && session.status === 'in-progress') {
+      const startTime = new Date(session.startTime).getTime();
+      const currentTime = Date.now();
+      const timeLimitMs = session.config.timeLimit * 60 * 1000; // 转换为毫秒
+      
+      if (currentTime - startTime > timeLimitMs) {
+        // 考试超时，但仍然允许提交（因为可能是网络延迟）
+        // 但是将结束时间设置为超时时间点
+        const timeoutEndTime = new Date(startTime + timeLimitMs);
+        
+        // 更新会话状态为超时
+        database.updateSession(sessionId, {
+          status: 'expired',
+          endTime: timeoutEndTime
+        });
+      }
+    }
     
     // 计算得分
     let correctAnswers = 0;
@@ -102,7 +125,10 @@ export async function POST(request: NextRequest) {
     });
 
     const result: ExamResult = {
-      session: updatedSession,
+      session: {
+        ...updatedSession,
+        questions // 添加题目数组到session中
+      },
       correctAnswers,
       incorrectAnswers: session.totalQuestions - correctAnswers,
       percentage,

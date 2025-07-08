@@ -268,7 +268,7 @@ export default function AdminAnalytics() {
                                         <div className="flex justify-between">
                                             <span className="text-gray-600">平均分:</span>
                                             <span className={`font-medium ${stats.averageScore >= 80 ? 'text-green-600' :
-                                                    stats.averageScore >= 60 ? 'text-yellow-600' : 'text-red-600'
+                                                stats.averageScore >= 60 ? 'text-yellow-600' : 'text-red-600'
                                                 }`}>
                                                 {stats.averageScore.toFixed(1)}%
                                             </span>
@@ -302,7 +302,7 @@ export default function AdminAnalytics() {
                                         <div className="flex justify-between">
                                             <span className="text-gray-600">平均分:</span>
                                             <span className={`font-medium ${stats.averageScore >= 80 ? 'text-green-600' :
-                                                    stats.averageScore >= 60 ? 'text-yellow-600' : 'text-red-600'
+                                                stats.averageScore >= 60 ? 'text-yellow-600' : 'text-red-600'
                                                 }`}>
                                                 {stats.averageScore.toFixed(1)}%
                                             </span>

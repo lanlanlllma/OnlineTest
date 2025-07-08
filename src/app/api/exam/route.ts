@@ -77,6 +77,66 @@ export async function GET(request: NextRequest) {
     if (!session) {
       return NextResponse.json({ error: '会话不存在' }, { status: 404 });
     }
+
+    // 检查考试是否已经超时
+    if (session.config?.timeLimit && session.status === 'in-progress') {
+      const startTime = new Date(session.startTime).getTime();
+      const currentTime = Date.now();
+      const timeLimitMs = session.config.timeLimit * 60 * 1000; // 转换为毫秒
+      
+      if (currentTime - startTime > timeLimitMs) {
+        // 考试超时，自动提交
+        const endTime = new Date(startTime + timeLimitMs);
+        const durationMs = endTime.getTime() - startTime;
+        const durationMinutes = Math.round(durationMs / (1000 * 60));
+        const durationInSeconds = Math.round(durationMs / 1000);
+        
+        // 计算得分
+        const questions = session.questionIds.map(id => database.getQuestionById(id)).filter(q => q !== undefined) as Question[];
+        let correctAnswers = 0;
+        
+        questions.forEach((question, index) => {
+          const userAnswer = session.answers[index];
+          let isCorrect = false;
+          
+          if (question.type === 'multiple') {
+            const correctAnswerArray = Array.isArray(question.correctAnswer) 
+              ? question.correctAnswer 
+              : [question.correctAnswer];
+            const userAnswerArray = Array.isArray(userAnswer) 
+              ? userAnswer 
+              : [userAnswer];
+            
+            isCorrect = correctAnswerArray.length === userAnswerArray.length &&
+                       correctAnswerArray.every(ans => userAnswerArray.includes(ans));
+          } else {
+            isCorrect = question.correctAnswer === userAnswer;
+          }
+          
+          if (isCorrect) correctAnswers++;
+        });
+        
+        const score = (correctAnswers / session.totalQuestions) * 100;
+        
+        // 更新会话状态为已完成
+        const updatedSession = {
+          ...session,
+          status: 'completed' as const,
+          endTime,
+          duration: durationMinutes,
+          durationInSeconds,
+          score
+        };
+        
+        database.updateSession(sessionId, updatedSession);
+        
+        return NextResponse.json({ 
+          error: '考试时间已到，已自动提交',
+          autoSubmitted: true,
+          sessionId 
+        }, { status: 410 }); // 410 Gone 表示资源已过期
+      }
+    }
     
     // 根据questionIds获取题目
     const questions = session.questionIds.map(id => database.getQuestionById(id)).filter(q => q !== undefined) as Question[];
@@ -87,10 +147,22 @@ export async function GET(request: NextRequest) {
       correctAnswer: undefined,
       explanation: undefined
     }));
+
+    // 计算剩余时间
+    let remainingTime = null;
+    if (session.config?.timeLimit && session.status === 'in-progress') {
+      const startTime = new Date(session.startTime).getTime();
+      const currentTime = Date.now();
+      const timeLimitMs = session.config.timeLimit * 60 * 1000;
+      const elapsedMs = currentTime - startTime;
+      remainingTime = Math.max(0, Math.floor((timeLimitMs - elapsedMs) / 1000)); // 返回剩余秒数
+    }
     
     return NextResponse.json({
       ...session,
-      questions: questionsForClient
+      questions: questionsForClient,
+      timeLimit: session.config?.timeLimit,
+      remainingTime // 添加剩余时间字段
     });
     
   } catch (error) {

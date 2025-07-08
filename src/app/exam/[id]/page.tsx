@@ -50,13 +50,15 @@ export default function ExamSessionPage({ params }: { params: Promise<{ id: stri
   }, [sessionId]);
 
   useEffect(() => {
-    if (timeLeft === null) return;
+    if (timeLeft === null || submitting) return;
 
     const timer = setInterval(() => {
       setTimeLeft(prev => {
         if (prev === null || prev <= 0) {
           // 时间到，自动提交
-          handleSubmit();
+          if (!submitting) {
+            handleSubmit();
+          }
           return 0;
         }
         return prev - 1;
@@ -64,11 +66,11 @@ export default function ExamSessionPage({ params }: { params: Promise<{ id: stri
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [timeLeft]);
+  }, [timeLeft, submitting]);
 
   const fetchSession = async () => {
     if (!sessionId) return;
-    
+
     try {
       const response = await fetch(`/api/exam?sessionId=${sessionId}`);
 
@@ -82,11 +84,21 @@ export default function ExamSessionPage({ params }: { params: Promise<{ id: stri
         setAnswers(initialAnswers);
 
         // 如果有时间限制，设置倒计时
-        if (data.timeLimit) {
-          setTimeLeft(data.timeLimit * 60); // 转换为秒
+        if (data.remainingTime !== null && data.remainingTime !== undefined) {
+          setTimeLeft(data.remainingTime); // 使用服务器返回的剩余时间（秒）
+        } else if (data.timeLimit) {
+          setTimeLeft(data.timeLimit * 60); // 如果没有剩余时间，使用完整时间限制
         }
       } else {
-        setError('获取考试信息失败');
+        const errorData = await response.json();
+        
+        // 如果是超时自动提交，跳转到结果页面
+        if (response.status === 410 && errorData.autoSubmitted) {
+          router.push(`/results/${sessionId}`);
+          return;
+        }
+        
+        setError(errorData.error || '获取考试信息失败');
       }
     } catch (err) {
       setError('加载考试时发生错误');
@@ -272,8 +284,8 @@ export default function ExamSessionPage({ params }: { params: Promise<{ id: stri
                   </h2>
                   <div className="flex items-center gap-2">
                     <span className={`px-3 py-1 rounded-full text-sm font-medium ${currentQ.type === 'multiple'
-                        ? 'bg-purple-100 text-purple-800'
-                        : 'bg-blue-100 text-blue-800'
+                      ? 'bg-purple-100 text-purple-800'
+                      : 'bg-blue-100 text-blue-800'
                       }`}>
                       {currentQ.type === 'multiple' ? '多选题' : '单选题'}
                     </span>
@@ -309,10 +321,10 @@ export default function ExamSessionPage({ params }: { params: Promise<{ id: stri
                     <label
                       key={index}
                       className={`block p-4 border-2 rounded-lg cursor-pointer transition-all ${isSelected
-                          ? currentQ.type === 'multiple'
-                            ? 'border-purple-500 bg-purple-50'
-                            : 'border-blue-500 bg-blue-50'
-                          : 'border-gray-200 hover:border-gray-300'
+                        ? currentQ.type === 'multiple'
+                          ? 'border-purple-500 bg-purple-50'
+                          : 'border-blue-500 bg-blue-50'
+                        : 'border-gray-200 hover:border-gray-300'
                         }`}
                     >
                       <div className="flex items-center">
@@ -328,8 +340,8 @@ export default function ExamSessionPage({ params }: { params: Promise<{ id: stri
                             }
                           }}
                           className={`mr-3 ${currentQ.type === 'multiple'
-                              ? 'text-purple-600'
-                              : 'text-blue-600'
+                            ? 'text-purple-600'
+                            : 'text-blue-600'
                             }`}
                         />
                         <span className="text-gray-700">
@@ -386,10 +398,10 @@ export default function ExamSessionPage({ params }: { params: Promise<{ id: stri
                       key={index}
                       onClick={() => setCurrentQuestion(index)}
                       className={`relative w-full h-10 rounded-lg text-sm font-medium transition-colors ${index === currentQuestion
-                          ? 'bg-blue-600 text-white'
-                          : isAnswered
-                            ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        ? 'bg-blue-600 text-white'
+                        : isAnswered
+                          ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                         }`}
                     >
                       {index + 1}

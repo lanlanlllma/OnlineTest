@@ -210,8 +210,8 @@ export default function UploadPage() {
                               {index + 1}. {question.question}
                             </p>
                             <span className={`px-2 py-1 rounded text-xs font-medium ${question.type === 'multiple'
-                                ? 'bg-purple-100 text-purple-800'
-                                : 'bg-blue-100 text-blue-800'
+                              ? 'bg-purple-100 text-purple-800'
+                              : 'bg-blue-100 text-blue-800'
                               }`}>
                               {question.type === 'multiple' ? '多选' : '单选'}
                             </span>

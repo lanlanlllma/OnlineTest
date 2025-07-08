@@ -134,7 +134,7 @@ export default function StudentResultDetail({ params }: { params: Promise<{ id: 
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <div className="text-center">
                             <div className={`text-3xl font-bold mb-2 ${session.score >= 80 ? 'text-green-600' :
-                                    session.score >= 60 ? 'text-yellow-600' : 'text-red-600'
+                                session.score >= 60 ? 'text-yellow-600' : 'text-red-600'
                                 }`}>
                                 {session.score.toFixed(1)}%
                             </div>
@@ -168,8 +168,8 @@ export default function StudentResultDetail({ params }: { params: Promise<{ id: 
                             <button
                                 onClick={() => setFilter('all')}
                                 className={`px-4 py-2 rounded-lg transition-colors ${filter === 'all'
-                                        ? 'bg-blue-600 text-white'
-                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                    ? 'bg-blue-600 text-white'
+                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                     }`}
                             >
                                 全部题目 ({session.questions.length})
@@ -177,8 +177,8 @@ export default function StudentResultDetail({ params }: { params: Promise<{ id: 
                             <button
                                 onClick={() => setFilter('correct')}
                                 className={`px-4 py-2 rounded-lg transition-colors ${filter === 'correct'
-                                        ? 'bg-green-600 text-white'
-                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                    ? 'bg-green-600 text-white'
+                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                     }`}
                             >
                                 正确题目 ({session.correctAnswers})
@@ -186,8 +186,8 @@ export default function StudentResultDetail({ params }: { params: Promise<{ id: 
                             <button
                                 onClick={() => setFilter('incorrect')}
                                 className={`px-4 py-2 rounded-lg transition-colors ${filter === 'incorrect'
-                                        ? 'bg-red-600 text-white'
-                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                    ? 'bg-red-600 text-white'
+                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                     }`}
                             >
                                 错误题目 ({session.totalQuestions - session.correctAnswers})
@@ -197,8 +197,8 @@ export default function StudentResultDetail({ params }: { params: Promise<{ id: 
                             <button
                                 onClick={() => setShowExplanations(!showExplanations)}
                                 className={`px-4 py-2 rounded-lg transition-colors ${showExplanations
-                                        ? 'bg-purple-600 text-white'
-                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                    ? 'bg-purple-600 text-white'
+                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                     }`}
                             >
                                 {showExplanations ? '隐藏解析' : '显示解析'}
@@ -220,8 +220,8 @@ export default function StudentResultDetail({ params }: { params: Promise<{ id: 
                                                 题目 {session.questions.indexOf(question) + 1}
                                             </h3>
                                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${question.type === 'multiple'
-                                                    ? 'bg-purple-100 text-purple-800'
-                                                    : 'bg-blue-100 text-blue-800'
+                                                ? 'bg-purple-100 text-purple-800'
+                                                : 'bg-blue-100 text-blue-800'
                                                 }`}>
                                                 {question.type === 'multiple' ? '多选题' : '单选题'}
                                             </span>
@@ -229,8 +229,8 @@ export default function StudentResultDetail({ params }: { params: Promise<{ id: 
                                         <p className="text-gray-700 mb-4">{question.question}</p>
                                     </div>
                                     <div className={`px-3 py-1 rounded-full text-sm font-medium ${isCorrect
-                                            ? 'bg-green-100 text-green-800'
-                                            : 'bg-red-100 text-red-800'
+                                        ? 'bg-green-100 text-green-800'
+                                        : 'bg-red-100 text-red-800'
                                         }`}>
                                         {isCorrect ? '正确' : '错误'}
                                     </div>
@@ -257,18 +257,18 @@ export default function StudentResultDetail({ params }: { params: Promise<{ id: 
                                             <div
                                                 key={optionIndex}
                                                 className={`p-3 rounded-lg border-2 ${isCorrectAnswer
-                                                        ? 'border-green-500 bg-green-50'
-                                                        : isUserAnswer && !isCorrectAnswer
-                                                            ? 'border-red-500 bg-red-50'
-                                                            : 'border-gray-200 bg-gray-50'
+                                                    ? 'border-green-500 bg-green-50'
+                                                    : isUserAnswer && !isCorrectAnswer
+                                                        ? 'border-red-500 bg-red-50'
+                                                        : 'border-gray-200 bg-gray-50'
                                                     }`}
                                             >
                                                 <div className="flex items-center">
                                                     <span className={`w-6 h-6 rounded-full text-sm font-medium flex items-center justify-center mr-3 ${isCorrectAnswer
-                                                            ? 'bg-green-500 text-white'
-                                                            : isUserAnswer && !isCorrectAnswer
-                                                                ? 'bg-red-500 text-white'
-                                                                : 'bg-gray-300 text-gray-700'
+                                                        ? 'bg-green-500 text-white'
+                                                        : isUserAnswer && !isCorrectAnswer
+                                                            ? 'bg-red-500 text-white'
+                                                            : 'bg-gray-300 text-gray-700'
                                                         }`}>
                                                         {optionLabel}
                                                     </span>

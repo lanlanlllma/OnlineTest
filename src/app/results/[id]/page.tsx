@@ -52,7 +52,7 @@ export default function ResultsPage({ params }: { params: Promise<{ id: string }
 
   const fetchResult = async () => {
     if (!sessionId) return;
-    
+
     try {
       const response = await fetch(`/api/export?sessionId=${sessionId}&format=json`);
 
@@ -242,15 +242,15 @@ export default function ResultsPage({ params }: { params: Promise<{ id: string }
                           {index + 1}. {question.question}
                         </h3>
                         <span className={`inline-block mt-2 px-2 py-1 rounded-full text-xs font-medium ${question.type === 'multiple'
-                            ? 'bg-purple-100 text-purple-800'
-                            : 'bg-blue-100 text-blue-800'
+                          ? 'bg-purple-100 text-purple-800'
+                          : 'bg-blue-100 text-blue-800'
                           }`}>
                           {question.type === 'multiple' ? '多选题' : '单选题'}
                         </span>
                       </div>
                       <span className={`px-3 py-1 rounded-full text-sm font-medium ${isCorrect
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-red-100 text-red-800'
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-red-100 text-red-800'
                         }`}>
                         {isCorrect ? '正确' : '错误'}
                       </span>
@@ -277,10 +277,10 @@ export default function ResultsPage({ params }: { params: Promise<{ id: string }
                           <div
                             key={optionIndex}
                             className={`p-3 rounded-lg border ${isCorrectAnswer
-                                ? 'border-green-500 bg-green-50'
-                                : isUserAnswer
-                                  ? 'border-red-500 bg-red-50'
-                                  : 'border-gray-200'
+                              ? 'border-green-500 bg-green-50'
+                              : isUserAnswer
+                                ? 'border-red-500 bg-red-50'
+                                : 'border-gray-200'
                               }`}
                           >
                             <div className="flex items-center justify-between">
