@@ -78,7 +78,10 @@ export async function GET(request: NextRequest) {
     });
     
     const result: ExamResult = {
-      session,
+      session: {
+        ...session,
+        questions // 添加题目数组到session中
+      },
       correctAnswers,
       incorrectAnswers: session.totalQuestions - correctAnswers,
       percentage: (correctAnswers / session.totalQuestions) * 100,

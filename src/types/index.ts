@@ -33,7 +33,9 @@ export interface ExamSession {
 }
 
 export interface ExamResult {
-  session: ExamSession;
+  session: ExamSession & {
+    questions: Question[]; // 扩展session以包含题目数组
+  };
   correctAnswers: number;
   incorrectAnswers: number;
   percentage: number;
