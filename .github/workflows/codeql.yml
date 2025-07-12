@@ -1,0 +1,92 @@
+# CodeQL static analysis workflow for TypeScript security scanning
+# https://docs.github.com/en/code-security/code-scanning/creating-an-advanced-setup-for-code-scanning/customizing-your-advanced-setup-for-code-scanning
+
+name: "CodeQL Security Analysis"
+
+on:
+  push:
+    branches: [ "main", "master", "develop" ]
+  pull_request:
+    branches: [ "main", "master", "develop" ]
+  schedule:
+    # Run CodeQL analysis every Monday at 6:00 AM UTC (2:00 PM Beijing time)
+    - cron: '0 6 * * 1'
+
+jobs:
+  analyze:
+    name: Analyze TypeScript Code
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    permissions:
+      # Required for all workflows
+      security-events: write
+      # Required to fetch internal or private CodeQL packs
+      packages: read
+      # Required for workflows in private repositories
+      actions: read
+      contents: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # CodeQL supports analysis for TypeScript/JavaScript
+        language: [ 'javascript-typescript' ]
+        # Learn more about CodeQL language support at:
+        # https://aka.ms/codeql-docs/language-support
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    # Install dependencies for better TypeScript analysis
+    - name: Install dependencies
+      run: |
+        npm ci
+      continue-on-error: true
+
+    # Initialize the CodeQL tools for scanning
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v3
+      with:
+        languages: ${{ matrix.language }}
+        # Use the default queries plus additional security queries
+        queries: +security-and-quality
+        # If you wish to specify custom queries, you can do so here or in a config file
+        # Example: queries: security-extended,security-and-quality
+        config: |
+          name: "CodeQL Config"
+          queries:
+            - uses: security-and-quality
+            - uses: security-extended
+          paths-ignore:
+            - node_modules
+            - .next
+            - out
+            - build
+            - dist
+            - coverage
+            - '**/*.min.js'
+            - '**/*.bundle.js'
+
+    # For TypeScript/JavaScript, CodeQL can analyze without compilation
+    # But we'll try to build to get better analysis results
+    - name: Build project (if possible)
+      run: |
+        npm run build || echo "Build failed, but continuing with analysis"
+      continue-on-error: true
+
+    # Perform CodeQL analysis
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v3
+      with:
+        category: "/language:${{matrix.language}}"
+        # Upload results even if there are findings
+        upload: true
+        # Wait for all analyses to complete before uploading
+        wait-for-processing: true
