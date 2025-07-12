@@ -1,0 +1,49 @@
+# Configuration for Dependabot dependency vulnerability detection
+# https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+
+version: 2
+updates:
+  # Enable version updates for npm
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "04:00"
+      timezone: "Asia/Shanghai"
+    # Allow both minor and patch updates for dependencies
+    # Security updates are always applied regardless of this setting
+    open-pull-requests-limit: 10
+    reviewers:
+      - "lanlanlllma"
+    assignees:
+      - "lanlanlllma"
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+    # Group updates to reduce PR noise
+    groups:
+      dev-dependencies:
+        patterns:
+          - "@types/*"
+          - "@eslint/*"
+          - "eslint*"
+          - "typescript"
+          - "tailwindcss"
+        dependency-type: "development"
+      production-dependencies:
+        patterns:
+          - "*"
+        dependency-type: "production"
+        exclude-patterns:
+          - "@types/*"
+          - "@eslint/*"
+          - "eslint*"
+          - "typescript"
+          - "tailwindcss"
+    # Labels to add to PRs
+    labels:
+      - "dependencies"
+      - "security"
+    # Enable automatic rebasing
+    rebase-strategy: "auto"
