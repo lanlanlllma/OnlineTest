@@ -47,11 +47,17 @@ export function useAdminAuth() {
     setIsAuthenticated(false);
   };
 
+  const getAuthHeaders = (): HeadersInit => {
+    const token = localStorage.getItem('admin_token');
+    return token ? { 'Authorization': `Bearer ${token}` } : {};
+  };
+
   return {
     isAuthenticated,
     loading,
     login,
     logout,
-    checkAuth
+    checkAuth,
+    getAuthHeaders
   };
 }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { optimizedDatabase } from '@/lib/database-optimized';
+import { database } from '@/lib/database';
 import { ExamResult, Question } from '@/types';
 
 export async function POST(request: NextRequest) {
@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '缺少必要参数' }, { status: 400 });
     }
     
-    const sessionWithQuestions = optimizedDatabase.getSessionWithQuestions(sessionId);
+    const sessionWithQuestions = database.getSessionWithQuestions(sessionId);
     
     if (!sessionWithQuestions) {
       return NextResponse.json({ error: '会话不存在' }, { status: 404 });
@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
     const duration = Math.round((endTime.getTime() - startTime.getTime()) / 60000);
     
     // 更新会话
-    optimizedDatabase.updateSession(sessionId, {
+    database.updateSession(sessionId, {
       answers,
       score,
       endTime,
@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
     });
     
     // 获取更新后的会话（带题目信息）
-    const updatedSessionWithQuestions = optimizedDatabase.getSessionWithQuestions(sessionId);
+    const updatedSessionWithQuestions = database.getSessionWithQuestions(sessionId);
     
     if (!updatedSessionWithQuestions) {
       return NextResponse.json({ error: '更新会话失败' }, { status: 500 });

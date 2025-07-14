@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { optimizedDatabase } from '@/lib/database-optimized';
+import { database } from '@/lib/database';
 import { migrateDatabase, compareStorageEfficiency } from '@/lib/migration';
 
 export async function GET(request: NextRequest) {
@@ -10,12 +10,12 @@ export async function GET(request: NextRequest) {
     switch (action) {
       case 'size':
         // 获取优化数据库大小信息
-        const sizeInfo = optimizedDatabase.getSize();
+        const sizeInfo = database.getSize();
         return NextResponse.json(sizeInfo);
 
       case 'backup':
         // 创建备份
-        const backupFile = optimizedDatabase.backup();
+        const backupFile = database.backup();
         return NextResponse.json({ 
           success: true, 
           backupFile: backupFile.split('/').pop(),
@@ -24,8 +24,8 @@ export async function GET(request: NextRequest) {
 
       case 'stats':
         // 获取详细统计
-        const stats = optimizedDatabase.getStats();
-        const sizeData = optimizedDatabase.getSize();
+        const stats = database.getStats();
+        const sizeData = database.getSize();
         return NextResponse.json({
           ...stats,
           fileSize: sizeData.fileSize,
@@ -59,15 +59,15 @@ export async function POST(request: NextRequest) {
 
     switch (action) {
       case 'clear-questions':
-        optimizedDatabase.clearQuestions();
+        database.clearQuestions();
         return NextResponse.json({ success: true, message: '题目数据已清空' });
 
       case 'clear-sessions':
-        optimizedDatabase.clearSessions();
+        database.clearSessions();
         return NextResponse.json({ success: true, message: '会话数据已清空' });
 
       case 'clear-all':
-        optimizedDatabase.clearAll();
+        database.clearAll();
         return NextResponse.json({ success: true, message: '所有数据已清空' });
 
       case 'migrate':

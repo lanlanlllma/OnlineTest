@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { optimizedDatabase } from '@/lib/database-optimized';
+import { database } from '@/lib/database';
 
 // 创建考试会话（优化版本）
 export async function POST(request: NextRequest) {
@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
     }
     
     // 获取题目
-    const questions = optimizedDatabase.getRandomQuestions(totalQuestions, category, difficulty);
+    const questions = database.getRandomQuestions(totalQuestions, category, difficulty);
     
     if (questions.length === 0) {
       return NextResponse.json({ error: '没有找到符合条件的题目' }, { status: 400 });
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
       }
     };
     
-    const sessionId = optimizedDatabase.createSession(sessionData);
+    const sessionId = database.createSession(sessionData);
     
     // 返回会话信息（不包含正确答案）
     const sessionForClient = {
@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: '缺少会话ID' }, { status: 400 });
     }
     
-    const sessionWithQuestions = optimizedDatabase.getSessionWithQuestions(sessionId);
+    const sessionWithQuestions = database.getSessionWithQuestions(sessionId);
     
     if (!sessionWithQuestions) {
       return NextResponse.json({ error: '会话不存在' }, { status: 404 });

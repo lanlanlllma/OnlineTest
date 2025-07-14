@@ -175,12 +175,20 @@ export default function AdminPortal() {
                             <p className="text-gray-600 mb-6">
                                 上传Excel文件导入题目，管理题库
                             </p>
-                            <Link
-                                href="/upload"
-                                className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors inline-block"
-                            >
-                                管理题目
-                            </Link>
+                            <div className="space-y-3">
+                                <Link
+                                    href="/upload"
+                                    className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors inline-block w-full"
+                                >
+                                    批量上传题目
+                                </Link>
+                                <Link
+                                    href="/questions"
+                                    className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors inline-block w-full"
+                                >
+                                    编辑管理题目
+                                </Link>
+                            </div>
                         </div>
                     </div>
 

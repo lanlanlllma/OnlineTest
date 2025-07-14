@@ -19,17 +19,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '没有找到符合条件的题目' }, { status: 400 });
     }
     
-    // 创建考试会话
-    const session: ExamSession = {
-      id: `exam_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    // 创建考试会话数据
+    const sessionData = {
       userId: `user_${Date.now()}`,
       userName,
-      questionIds: questions.map(q => q.id), // 只存储题目ID
+      questions, // 传递完整的题目数组
       answers: new Array(questions.length).fill(-1),
       score: 0,
       totalQuestions: questions.length,
       startTime: new Date(),
-      status: 'in-progress',
+      status: 'in-progress' as const,
       config: {
         category,
         difficulty,
@@ -38,7 +37,7 @@ export async function POST(request: NextRequest) {
       }
     };
     
-    const sessionId = database.createSession(session);
+    const sessionId = database.createSession(sessionData);
     
     // 返回会话信息和题目（不包含正确答案）
     const questionsForClient = questions.map(q => ({
@@ -50,7 +49,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       sessionId,
       session: {
-        ...session,
+        id: sessionId,
+        ...sessionData,
         questions: questionsForClient
       },
       timeLimit
