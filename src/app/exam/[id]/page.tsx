@@ -48,7 +48,7 @@ export default function ExamSessionPage({ params }: { params: Promise<{ id: stri
     getParams();
   }, [params]);
 
-  // 自动保存功能
+  // 自动保存功能（同时保存到本地和服务端）
   const saveExamState = useCallback(async (answersToSave: (number | number[])[], currentQuestionToSave: number, timeLeftToSave: number | null) => {
     if (!sessionId) return;
 
@@ -63,10 +63,42 @@ export default function ExamSessionPage({ params }: { params: Promise<{ id: stri
     // 保存到 localStorage
     try {
       localStorage.setItem(`exam_state_${sessionId}`, JSON.stringify(examState));
-      setAutoSaveStatus('saved');
     } catch (error) {
       console.error('保存考试状态到本地存储失败:', error);
+    }
+
+    // 保存到服务端
+    try {
+      setAutoSaveStatus('saving');
+      const response = await fetch('/api/exam/save-progress', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          sessionId,
+          answers: answersToSave,
+          currentQuestion: currentQuestionToSave,
+          timeLeft: timeLeftToSave
+        }),
+      });
+
+      if (response.ok) {
+        setAutoSaveStatus('saved');
+      } else {
+        const errorData = await response.json();
+        if (response.status === 410 && errorData.timeExpired) {
+          // 考试时间已到，服务端检测到超时
+          setError('考试时间已到，正在自动提交...');
+          handleSubmit();
+          return;
+        }
+        throw new Error(errorData.error || '保存失败');
+      }
+    } catch (error) {
+      console.error('保存考试状态到服务端失败:', error);
       setAutoSaveStatus('error');
+      // 即使服务端保存失败，本地存储仍然有效
     }
 
     // 清除之前的定时器
@@ -82,9 +114,9 @@ export default function ExamSessionPage({ params }: { params: Promise<{ id: stri
 
   // 防抖保存函数
   const debouncedSave = useCallback((answersToSave: (number | number[])[], currentQuestionToSave: number, timeLeftToSave: number | null) => {
-    // 避免频繁保存，最少间隔3秒
+    // 避免频繁保存到服务端，最少间隔10秒
     const now = Date.now();
-    if (now - lastSaveTimeRef.current < 3000) {
+    if (now - lastSaveTimeRef.current < 10000) {
       return;
     }
 
@@ -92,6 +124,18 @@ export default function ExamSessionPage({ params }: { params: Promise<{ id: stri
     lastSaveTimeRef.current = now;
     saveExamState(answersToSave, currentQuestionToSave, timeLeftToSave);
   }, [saveExamState]);
+
+  // 定期自动保存到服务端（每30秒）
+  useEffect(() => {
+    if (!sessionId || !session || session.status !== 'in-progress') return;
+
+    const autoSaveInterval = setInterval(() => {
+      // 强制保存到服务端，不受防抖限制
+      saveExamState(answers, currentQuestion, timeLeft);
+    }, 30000); // 每30秒自动保存
+
+    return () => clearInterval(autoSaveInterval);
+  }, [sessionId, session, answers, currentQuestion, timeLeft, saveExamState]);
 
   // 恢复考试状态
   const restoreExamState = useCallback(() => {
@@ -177,15 +221,127 @@ export default function ExamSessionPage({ params }: { params: Promise<{ id: stri
     };
   }, [sessionId, session, answers, currentQuestion, timeLeft, debouncedSave, saveExamState]);
 
+  // 定期检查服务端考试状态（防止服务端检测到超时）
+  useEffect(() => {
+    if (!sessionId || !session || session.status !== 'in-progress') return;
+
+    const checkServerStatus = async () => {
+      try {
+        const response = await fetch(`/api/exam?sessionId=${sessionId}`);
+
+        if (response.status === 410) {
+          // 服务端检测到考试超时
+          const data = await response.json();
+          if (data.autoSubmitted) {
+            setError('考试时间已到，系统已自动提交您的答案');
+            clearExamState();
+            router.push(`/results/${sessionId}`);
+          }
+        } else if (!response.ok) {
+          console.error('检查服务端状态失败:', response.status);
+        }
+      } catch (error) {
+        console.error('检查服务端状态时发生错误:', error);
+      }
+    };
+
+    // 每30秒检查一次服务端状态
+    const statusCheckInterval = setInterval(checkServerStatus, 30000);
+
+    return () => clearInterval(statusCheckInterval);
+  }, [sessionId, session, router, clearExamState]);
+
+  // 检查服务端超时状态并处理提交
+  const checkServerTimeoutAndSubmit = useCallback(async () => {
+    if (!sessionId) return;
+
+    try {
+      const response = await fetch(`/api/exam?sessionId=${sessionId}`);
+
+      if (response.status === 410) {
+        // 服务端已经检测到超时并自动提交
+        const data = await response.json();
+        if (data.autoSubmitted) {
+          setError('考试时间已到，系统已自动提交您的答案');
+          clearExamState();
+          router.push(`/results/${sessionId}`);
+          return;
+        }
+      }
+
+      // 如果服务端还没有自动提交，则手动提交
+      if (response.ok || response.status === 404) {
+        // 直接调用提交逻辑，避免循环依赖
+        if (submitting) return;
+
+        setSubmitting(true);
+        try {
+          const submitResponse = await fetch('/api/exam/submit', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              sessionId: sessionId,
+              answers,
+            }),
+          });
+
+          if (submitResponse.ok) {
+            clearExamState();
+            router.push(`/results/${sessionId}`);
+          } else {
+            const data = await submitResponse.json();
+            setError(data.error || '提交失败');
+          }
+        } catch (err) {
+          setError('提交时发生错误');
+        } finally {
+          setSubmitting(false);
+        }
+      }
+    } catch (error) {
+      console.error('检查服务端状态失败，尝试直接提交:', error);
+      // 如果检查失败，尝试直接提交
+      if (!submitting) {
+        setSubmitting(true);
+        try {
+          const response = await fetch('/api/exam/submit', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              sessionId: sessionId,
+              answers,
+            }),
+          });
+
+          if (response.ok) {
+            clearExamState();
+            router.push(`/results/${sessionId}`);
+          } else {
+            const data = await response.json();
+            setError(data.error || '提交失败');
+          }
+        } catch (err) {
+          setError('提交时发生错误');
+        } finally {
+          setSubmitting(false);
+        }
+      }
+    }
+  }, [sessionId, router, clearExamState, answers, submitting]);
+
   useEffect(() => {
     if (timeLeft === null || submitting) return;
 
     const timer = setInterval(() => {
       setTimeLeft(prev => {
         if (prev === null || prev <= 0) {
-          // 时间到，自动提交
+          // 时间到，先检查服务端状态，再决定是否提交
           if (!submitting) {
-            handleSubmit();
+            checkServerTimeoutAndSubmit();
           }
           return 0;
         }
@@ -395,8 +551,8 @@ export default function ExamSessionPage({ params }: { params: Promise<{ id: stri
               {autoSaveStatus && (
                 <div className="text-center">
                   <div className={`flex items-center gap-2 text-sm ${autoSaveStatus === 'saved' ? 'text-green-600' :
-                      autoSaveStatus === 'saving' ? 'text-blue-600' :
-                        'text-red-600'
+                    autoSaveStatus === 'saving' ? 'text-blue-600' :
+                      'text-red-600'
                     }`}>
                     {autoSaveStatus === 'saved' && (
                       <>

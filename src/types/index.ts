@@ -23,12 +23,19 @@ export interface ExamSession {
   duration?: number; // in minutes
   durationInSeconds?: number; // in seconds, more precise
   status: 'in-progress' | 'completed' | 'expired';
+  lastSaved?: Date; // 最后保存时间
   // 可选：存储考试配置
   config?: {
     category?: string;
     difficulty?: string;
     timeLimit?: number;
     templateId?: string;
+  };
+  // 进度跟踪
+  progress?: {
+    currentQuestion: number;
+    timeLeft: number | null;
+    answeredCount: number;
   };
 }
 

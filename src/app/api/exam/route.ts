@@ -85,6 +85,8 @@ export async function GET(request: NextRequest) {
       const timeLimitMs = session.config.timeLimit * 60 * 1000; // 转换为毫秒
       
       if (currentTime - startTime > timeLimitMs) {
+        console.log('检测到考试超时，自动提交:', { sessionId, startTime, currentTime, timeLimitMs });
+        
         // 考试超时，自动提交
         const endTime = new Date(startTime + timeLimitMs);
         const durationMs = endTime.getTime() - startTime;
@@ -129,6 +131,7 @@ export async function GET(request: NextRequest) {
         };
         
         database.updateSession(sessionId, updatedSession);
+        console.log('考试自动提交完成:', { sessionId, score, correctAnswers });
         
         return NextResponse.json({ 
           error: '考试时间已到，已自动提交',

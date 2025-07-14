@@ -108,7 +108,7 @@ export default function StudentResultDetail({ params }: { params: Promise<{ id: 
                 {/* Session Info */}
                 <div className="bg-white rounded-lg shadow-lg p-8 mb-8">
                     <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">{session.name}</h2>
-                    
+
                     {/* 成绩概览 */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                         <div className="text-center p-6 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg">

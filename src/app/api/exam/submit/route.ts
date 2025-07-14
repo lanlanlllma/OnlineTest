@@ -7,21 +7,45 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { sessionId, answers } = body;
     
+    console.log('考试提交请求:', { sessionId, answersLength: answers?.length });
+    
     if (!sessionId || !answers) {
+      console.log('缺少必要参数:', { sessionId: !!sessionId, answers: !!answers });
       return NextResponse.json({ error: '缺少必要参数' }, { status: 400 });
     }
     
     const session = database.getSession(sessionId);
     
     if (!session) {
+      console.log('会话不存在:', sessionId);
       return NextResponse.json({ error: '会话不存在' }, { status: 404 });
     }
     
+    console.log('当前会话状态:', { status: session.status, sessionId });
+    
     if (session.status === 'completed') {
-      return NextResponse.json({ error: '考试已经完成' }, { status: 400 });
+      console.log('考试已经完成，返回现有结果:', sessionId);
+      
+      // 如果考试已经完成，返回现有的结果而不是错误
+      // 这可能是因为服务端已经自动提交了
+      const questions = session.questionIds.map(id => database.getQuestionById(id)).filter(q => q !== undefined) as Question[];
+      
+      const result: ExamResult = {
+        session: {
+          ...session,
+          questions
+        },
+        correctAnswers: 0, // 这些值在自动提交时已经计算过了
+        incorrectAnswers: session.totalQuestions,
+        percentage: session.score || 0,
+        categoryBreakdown: {}
+      };
+      
+      return NextResponse.json(result);
     }
 
     if (session.status === 'expired') {
+      console.log('考试时间已到，但状态为expired:', sessionId);
       return NextResponse.json({ error: '考试时间已到' }, { status: 400 });
     }
 

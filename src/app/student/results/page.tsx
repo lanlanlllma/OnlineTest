@@ -187,7 +187,7 @@ export default function StudentResults() {
                                                     <div>
                                                         <span className="font-medium">分数:</span>
                                                         <span className={`ml-1 font-bold ${session.score >= 80 ? 'text-green-600' :
-                                                                session.score >= 60 ? 'text-yellow-600' : 'text-red-600'
+                                                            session.score >= 60 ? 'text-yellow-600' : 'text-red-600'
                                                             }`}>
                                                             {session.score.toFixed(1)}%
                                                         </span>
