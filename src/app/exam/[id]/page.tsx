@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
@@ -34,6 +34,11 @@ export default function ExamSessionPage({ params }: { params: Promise<{ id: stri
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [autoSaveStatus, setAutoSaveStatus] = useState<'saved' | 'saving' | 'error' | null>(null);
+
+  // 用于防抖的引用
+  const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastSaveTimeRef = useRef<number>(0);
 
   useEffect(() => {
     async function getParams() {
@@ -43,11 +48,134 @@ export default function ExamSessionPage({ params }: { params: Promise<{ id: stri
     getParams();
   }, [params]);
 
+  // 自动保存功能
+  const saveExamState = useCallback(async (answersToSave: (number | number[])[], currentQuestionToSave: number, timeLeftToSave: number | null) => {
+    if (!sessionId) return;
+
+    const examState = {
+      sessionId,
+      answers: answersToSave,
+      currentQuestion: currentQuestionToSave,
+      timeLeft: timeLeftToSave,
+      lastSaved: Date.now()
+    };
+
+    // 保存到 localStorage
+    try {
+      localStorage.setItem(`exam_state_${sessionId}`, JSON.stringify(examState));
+      setAutoSaveStatus('saved');
+    } catch (error) {
+      console.error('保存考试状态到本地存储失败:', error);
+      setAutoSaveStatus('error');
+    }
+
+    // 清除之前的定时器
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
+    }
+
+    // 2秒后隐藏保存状态提示
+    autoSaveTimeoutRef.current = setTimeout(() => {
+      setAutoSaveStatus(null);
+    }, 2000);
+  }, [sessionId]);
+
+  // 防抖保存函数
+  const debouncedSave = useCallback((answersToSave: (number | number[])[], currentQuestionToSave: number, timeLeftToSave: number | null) => {
+    // 避免频繁保存，最少间隔3秒
+    const now = Date.now();
+    if (now - lastSaveTimeRef.current < 3000) {
+      return;
+    }
+
+    setAutoSaveStatus('saving');
+    lastSaveTimeRef.current = now;
+    saveExamState(answersToSave, currentQuestionToSave, timeLeftToSave);
+  }, [saveExamState]);
+
+  // 恢复考试状态
+  const restoreExamState = useCallback(() => {
+    if (!sessionId) return false;
+
+    try {
+      const savedState = localStorage.getItem(`exam_state_${sessionId}`);
+      if (savedState) {
+        const examState = JSON.parse(savedState);
+        // 检查保存时间，如果超过2小时则不恢复
+        if (Date.now() - examState.lastSaved > 2 * 60 * 60 * 1000) {
+          localStorage.removeItem(`exam_state_${sessionId}`);
+          return false;
+        }
+
+        setAnswers(examState.answers || []);
+        setCurrentQuestion(examState.currentQuestion || 0);
+        if (examState.timeLeft !== null && examState.timeLeft !== undefined) {
+          // 计算实际经过的时间
+          const timePassed = Math.floor((Date.now() - examState.lastSaved) / 1000);
+          const adjustedTimeLeft = Math.max(0, examState.timeLeft - timePassed);
+          setTimeLeft(adjustedTimeLeft);
+        }
+        return true;
+      }
+    } catch (error) {
+      console.error('恢复考试状态失败:', error);
+    }
+    return false;
+  }, [sessionId]);
+
+  // 清理考试状态
+  const clearExamState = useCallback(() => {
+    if (sessionId) {
+      localStorage.removeItem(`exam_state_${sessionId}`);
+    }
+  }, [sessionId]);
+
   useEffect(() => {
     if (sessionId) {
       fetchSession();
     }
   }, [sessionId]);
+
+  // 监听页面可见性变化和页面卸载事件
+  useEffect(() => {
+    if (!sessionId || !session) return;
+
+    // 页面可见性变化时保存状态
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        // 页面隐藏时保存状态
+        debouncedSave(answers, currentQuestion, timeLeft);
+      }
+    };
+
+    // 页面卸载前保存状态
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (session.status === 'in-progress') {
+        saveExamState(answers, currentQuestion, timeLeft);
+        // 显示确认对话框
+        e.preventDefault();
+        e.returnValue = '您正在进行考试，确定要离开吗？您的答题进度已自动保存。';
+        return e.returnValue;
+      }
+    };
+
+    // 页面完全卸载时保存状态
+    const handleUnload = () => {
+      if (session.status === 'in-progress') {
+        saveExamState(answers, currentQuestion, timeLeft);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('unload', handleUnload);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('unload', handleUnload);
+    };
+  }, [sessionId, session, answers, currentQuestion, timeLeft, debouncedSave, saveExamState]);
 
   useEffect(() => {
     if (timeLeft === null || submitting) return;
@@ -77,23 +205,30 @@ export default function ExamSessionPage({ params }: { params: Promise<{ id: stri
       if (response.ok) {
         const data = await response.json();
         setSession(data);
-        // 初始化答案数组：单选题用-1，多选题用空数组
-        const initialAnswers = data.questions.map((q: Question) =>
-          q.type === 'multiple' ? [] : -1
-        );
-        setAnswers(initialAnswers);
 
-        // 如果有时间限制，设置倒计时
-        if (data.remainingTime !== null && data.remainingTime !== undefined) {
-          setTimeLeft(data.remainingTime); // 使用服务器返回的剩余时间（秒）
-        } else if (data.timeLimit) {
-          setTimeLeft(data.timeLimit * 60); // 如果没有剩余时间，使用完整时间限制
+        // 尝试恢复保存的状态
+        const restored = restoreExamState();
+
+        if (!restored) {
+          // 如果没有恢复状态，则初始化答案数组
+          const initialAnswers = data.questions.map((q: Question) =>
+            q.type === 'multiple' ? [] : -1
+          );
+          setAnswers(initialAnswers);
+
+          // 如果有时间限制，设置倒计时
+          if (data.remainingTime !== null && data.remainingTime !== undefined) {
+            setTimeLeft(data.remainingTime); // 使用服务器返回的剩余时间（秒）
+          } else if (data.timeLimit) {
+            setTimeLeft(data.timeLimit * 60); // 如果没有剩余时间，使用完整时间限制
+          }
         }
       } else {
         const errorData = await response.json();
 
         // 如果是超时自动提交，跳转到结果页面
         if (response.status === 410 && errorData.autoSubmitted) {
+          clearExamState(); // 清理本地状态
           router.push(`/results/${sessionId}`);
           return;
         }
@@ -112,6 +247,9 @@ export default function ExamSessionPage({ params }: { params: Promise<{ id: stri
     const newAnswers = [...answers];
     newAnswers[questionIndex] = answerIndex;
     setAnswers(newAnswers);
+
+    // 触发自动保存
+    debouncedSave(newAnswers, currentQuestion, timeLeft);
   };
 
   // 多选题答案处理
@@ -127,6 +265,9 @@ export default function ExamSessionPage({ params }: { params: Promise<{ id: stri
       newAnswers[questionIndex] = [...currentAnswers, answerIndex].sort();
     }
     setAnswers(newAnswers);
+
+    // 触发自动保存
+    debouncedSave(newAnswers, currentQuestion, timeLeft);
   };
 
   const handleSubmit = async () => {
@@ -147,6 +288,8 @@ export default function ExamSessionPage({ params }: { params: Promise<{ id: stri
 
       if (response.ok) {
         const result = await response.json();
+        // 清理本地保存的状态
+        clearExamState();
         // 跳转到结果页面
         router.push(`/results/${sessionId}`);
       } else {
@@ -158,6 +301,13 @@ export default function ExamSessionPage({ params }: { params: Promise<{ id: stri
     } finally {
       setSubmitting(false);
     }
+  };
+
+  // 处理题目切换
+  const handleQuestionChange = (newQuestionIndex: number) => {
+    setCurrentQuestion(newQuestionIndex);
+    // 切换题目时保存状态
+    debouncedSave(answers, newQuestionIndex, timeLeft);
   };
 
   const formatTime = (seconds: number) => {
@@ -241,6 +391,40 @@ export default function ExamSessionPage({ params }: { params: Promise<{ id: stri
               </p>
             </div>
             <div className="flex items-center space-x-6 mt-4 md:mt-0">
+              {/* 自动保存状态指示器 */}
+              {autoSaveStatus && (
+                <div className="text-center">
+                  <div className={`flex items-center gap-2 text-sm ${autoSaveStatus === 'saved' ? 'text-green-600' :
+                      autoSaveStatus === 'saving' ? 'text-blue-600' :
+                        'text-red-600'
+                    }`}>
+                    {autoSaveStatus === 'saved' && (
+                      <>
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                        已保存
+                      </>
+                    )}
+                    {autoSaveStatus === 'saving' && (
+                      <>
+                        <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        保存中
+                      </>
+                    )}
+                    {autoSaveStatus === 'error' && (
+                      <>
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                        </svg>
+                        保存失败
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
               {timeLeft !== null && (
                 <div className="text-center">
                   <div className={`text-2xl font-bold ${timeLeft < 300 ? 'text-red-600' : 'text-blue-600'}`}>
@@ -269,6 +453,16 @@ export default function ExamSessionPage({ params }: { params: Promise<{ id: stri
                 className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                 style={{ width: `${getProgress()}%` }}
               ></div>
+            </div>
+          </div>
+
+          {/* 自动保存提示 */}
+          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex items-center gap-2 text-sm text-blue-800">
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+              </svg>
+              您的答题进度会自动保存，短时间离开后可以继续作答
             </div>
           </div>
         </div>
@@ -356,7 +550,7 @@ export default function ExamSessionPage({ params }: { params: Promise<{ id: stri
               {/* 导航按钮 */}
               <div className="flex justify-between items-center mt-8">
                 <button
-                  onClick={() => setCurrentQuestion(Math.max(0, currentQuestion - 1))}
+                  onClick={() => handleQuestionChange(Math.max(0, currentQuestion - 1))}
                   disabled={currentQuestion === 0}
                   className="bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
@@ -373,7 +567,7 @@ export default function ExamSessionPage({ params }: { params: Promise<{ id: stri
                   </button>
                 ) : (
                   <button
-                    onClick={() => setCurrentQuestion(Math.min(session.questions.length - 1, currentQuestion + 1))}
+                    onClick={() => handleQuestionChange(Math.min(session.questions.length - 1, currentQuestion + 1))}
                     className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
                   >
                     下一题
@@ -396,7 +590,7 @@ export default function ExamSessionPage({ params }: { params: Promise<{ id: stri
                   return (
                     <button
                       key={index}
-                      onClick={() => setCurrentQuestion(index)}
+                      onClick={() => handleQuestionChange(index)}
                       className={`relative w-full h-10 rounded-lg text-sm font-medium transition-colors ${index === currentQuestion
                         ? 'bg-blue-600 text-white'
                         : isAnswered

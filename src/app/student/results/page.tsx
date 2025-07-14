@@ -222,7 +222,7 @@ export default function StudentResults() {
                                                     href={`/student/results/${session.id}`}
                                                     className="text-blue-600 hover:text-blue-800 text-sm font-medium"
                                                 >
-                                                    查看详情
+                                                    查看成绩
                                                 </Link>
                                             </div>
                                         </div>

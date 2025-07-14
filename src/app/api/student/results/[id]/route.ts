@@ -55,45 +55,17 @@ export async function GET(
       }
     });
 
-    // 格式化题目数据，包含用户答案
-    const formattedQuestions = questions.map((question: Question, index: number) => {
-      const userAnswer = session.answers[index];
-      
-      // 格式化正确答案
-      let correctAnswerStr = '';
-      if (question.type === 'multiple') {
-        const correctAnswers = question.correctAnswer as number[];
-        correctAnswerStr = correctAnswers.map(a => String.fromCharCode(65 + a)).join(',');
-      } else {
-        correctAnswerStr = String.fromCharCode(65 + (question.correctAnswer as number));
-      }
-      
-      // 格式化用户答案
-      let userAnswerStr: string | undefined = undefined;
-      if (question.type === 'multiple') {
-        const userAnswers = userAnswer as number[] || [];
-        userAnswerStr = userAnswers.length > 0 
-          ? userAnswers.map(a => String.fromCharCode(65 + a)).join(',')
-          : undefined;
-      } else {
-        userAnswerStr = userAnswer !== undefined && userAnswer !== -1 
-          ? String.fromCharCode(65 + (userAnswer as number))
-          : undefined;
-      }
+    // 获取考试的分类和难度信息（如果存在）
+    let category: string | undefined = undefined;
+    let difficulty: string | undefined = undefined;
+    
+    if (questions.length > 0) {
+      // 从第一道题获取分类和难度（假设同一次考试的题目具有相同的分类和难度）
+      category = questions[0].category;
+      difficulty = questions[0].difficulty;
+    }
 
-      return {
-        id: question.id,
-        question: question.question,
-        type: question.type,
-        options: question.options,
-        correctAnswer: correctAnswerStr,
-        userAnswer: userAnswerStr,
-        explanation: question.explanation,
-        category: question.category,
-        difficulty: question.difficulty
-      };
-    });
-
+    // 只返回基础统计信息，不包含题目详情
     const result = {
       id: session.id,
       name: session.userName || '考试记录',
@@ -102,7 +74,8 @@ export async function GET(
       totalQuestions: session.totalQuestions,
       correctAnswers,
       duration: session.duration || 0,
-      questions: formattedQuestions
+      category: category,
+      difficulty: difficulty
     };
 
     return NextResponse.json(result);
